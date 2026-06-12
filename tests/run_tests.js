@@ -105,11 +105,21 @@ function runSpecificIntegrityTests() {
   assert.strictEqual(sungmanFC.rank, 2, '성만 FC should be ranked 2nd');
 }
 
+function runRouterTests() {
+  const fs = require('fs');
+  const path = require('path');
+  const appJsPath = path.join(__dirname, '../js/app.js');
+  const appJsCode = fs.readFileSync(appJsPath, 'utf8');
+  assert.ok(appJsCode.includes('switchTab'), 'app.js should contain switchTab logic');
+  assert.ok(appJsCode.includes('window.location.hash'), 'app.js should use window.location.hash');
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
 runTestBlock('Standing Data Schema Tests (runStandingTests)', runStandingTests);
 runTestBlock('Specific Integrity Tests (runSpecificIntegrityTests)', runSpecificIntegrityTests);
+runTestBlock('Router Syntax Verification (runRouterTests)', runRouterTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');
