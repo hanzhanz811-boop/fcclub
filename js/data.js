@@ -9,8 +9,8 @@ const squadData = [
 const matchData = [
   { id: 101, opponent: "수원 삼성", date: "2026-06-20", time: "19:00", venue: "성만 아레나", type: "Home", status: "upcoming" },
   { id: 102, opponent: "FC 서울", date: "2026-06-25", time: "19:30", venue: "서울월드컵경기장", type: "Away", status: "upcoming" },
-  { id: 100, opponent: "전북 현대", date: "2026-06-07", venue: "성만 아레나", type: "Home", score: { home: 2, away: 1 }, status: "finished" },
-  { id: 99, opponent: "울산 HD", date: "2026-06-03", venue: "울산문수경기장", type: "Away", score: { home: 1, away: 1 }, status: "finished" }
+  { id: 100, opponent: "전북 현대", date: "2026-06-07", time: "19:00", venue: "성만 아레나", type: "Home", score: { home: 2, away: 1 }, status: "finished" },
+  { id: 99, opponent: "울산 HD", date: "2026-06-03", time: "19:00", venue: "울산문수경기장", type: "Away", score: { home: 1, away: 1 }, status: "finished" }
 ];
 
 const standingData = [
