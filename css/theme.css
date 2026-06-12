@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap');
+
+:root {
+  --color-bg-primary: #0d0d0d;
+  --color-bg-secondary: #161616;
+  --color-accent-gold: linear-gradient(135deg, #f39c12, #d4af37, #f9ca24);
+  --color-gold-solid: #d4af37;
+  --color-gold-hover: #ffdf00;
+  --color-text-primary: #ffffff;
+  --color-text-muted: #aaaaaa;
+  --color-glass-bg: rgba(22, 22, 22, 0.75);
+  --color-glass-border: rgba(212, 175, 55, 0.15);
+  --font-header: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --max-width: 1200px;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
