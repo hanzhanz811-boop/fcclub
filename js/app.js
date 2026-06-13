@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   initRouter();
+  bindNextMatchWidget();
 });
 
 function initRouter() {
@@ -68,3 +69,36 @@ function initRouter() {
     }
   });
 }
+
+function bindNextMatchWidget() {
+  if (typeof matchData === 'undefined') return;
+  const upcomingMatch = matchData.find(m => m.status === 'upcoming');
+  if (upcomingMatch) {
+    const opponentEl = document.getElementById('nextMatchOpponent');
+    const infoEl = document.getElementById('nextMatchInfo');
+    const ddayEl = document.getElementById('nextMatchDDay');
+    
+    if (opponentEl) opponentEl.textContent = upcomingMatch.opponent;
+    if (infoEl) infoEl.textContent = `${upcomingMatch.date} ${upcomingMatch.time} @ ${upcomingMatch.venue}`;
+    
+    // D-Day calculation
+    const matchDateObj = new Date(`${upcomingMatch.date}T${upcomingMatch.time}`);
+    const today = new Date();
+    // Reset hours for day-based comparison
+    matchDateObj.setHours(0,0,0,0);
+    const todayZero = new Date(today);
+    todayZero.setHours(0,0,0,0);
+    
+    const diffTime = matchDateObj - todayZero;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let dDayText = 'FINISHED';
+    if (diffDays > 0) {
+      dDayText = `D-${String(diffDays).padStart(2, '0')}`;
+    } else if (diffDays === 0) {
+      dDayText = 'D-DAY';
+    }
+    if (ddayEl) ddayEl.textContent = dDayText;
+  }
+}
+
