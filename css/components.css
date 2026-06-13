@@ -488,3 +488,221 @@
   border-bottom: 1px solid var(--color-gold-solid);
   color: var(--color-gold-hover);
 }
+
+/* Fan Zone Layout & Components */
+.fanzone-container {
+  padding-bottom: 60px;
+}
+.fanzone-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 30px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .fanzone-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.board-list-column {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.board-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.board-count {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.board-count strong {
+  color: var(--color-gold-solid);
+}
+.board-list-items {
+  max-height: 600px;
+  overflow-y: auto;
+}
+.board-item-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+.board-item-card:hover, .board-item-card.active {
+  border-color: var(--color-gold-solid);
+  background: rgba(212, 175, 55, 0.05);
+  transform: translateY(-2px);
+}
+.board-item-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.board-item-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.board-detail-column {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 12px;
+  padding: 25px;
+  min-height: 400px;
+}
+.board-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 350px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+/* Form & Detail Styles */
+.fanzone-form-group {
+  margin-bottom: 15px;
+}
+.fanzone-form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--color-gold-solid);
+  margin-bottom: 5px;
+}
+.fanzone-input, .fanzone-textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-glass-border);
+  color: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: inherit;
+}
+.fanzone-input:focus, .fanzone-textarea:focus {
+  outline: none;
+  border-color: var(--color-gold-solid);
+}
+.fanzone-textarea {
+  resize: none;
+  height: 180px;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.post-detail-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+.post-detail-title {
+  font-family: var(--font-header);
+  font-size: 22px;
+  color: var(--color-gold-solid);
+  margin-bottom: 10px;
+}
+.post-detail-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.post-detail-content {
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 30px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.post-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+.comments-section {
+  margin-top: 25px;
+}
+.comments-section h4 {
+  color: var(--color-gold-solid);
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+.comment-item {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: 5px;
+}
+.comment-text {
+  font-size: 13px;
+  color: #ddd;
+  word-break: break-all;
+}
+.comment-delete-btn {
+  background: none;
+  border: none;
+  color: #ff4d4d;
+  cursor: pointer;
+  font-size: 11px;
+}
+.comment-form {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.comment-form textarea {
+  grid-column: span 2;
+  height: 60px;
+}
+
+/* Secondary & Danger Buttons */
+.btn-secondary {
+  background: #444;
+  color: #fff;
+}
+.btn-secondary:hover {
+  background: #555;
+}
+.btn-danger {
+  background: #ff4d4d;
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #ff3333;
+}
