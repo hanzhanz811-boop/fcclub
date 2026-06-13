@@ -386,3 +386,105 @@
   font-size: 11px;
   color: var(--color-text-muted);
 }
+
+.matches-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1.4fr;
+  gap: 40px;
+  margin-bottom: 60px;
+}
+
+.matches-grid h3 {
+  font-family: var(--font-header);
+  font-size: 20px;
+  color: var(--color-gold-solid);
+  margin-bottom: 20px;
+  border-left: 3px solid var(--color-gold-solid);
+  padding-left: 10px;
+}
+
+.match-list-item {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.match-list-item.finished {
+  opacity: 0.8;
+}
+
+.match-list-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.match-list-meta .match-type-badge {
+  background-color: #333;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.match-list-meta .match-type-badge.home {
+  background-color: var(--color-gold-solid);
+  color: #000;
+}
+
+.match-list-teams {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.match-list-score {
+  font-family: var(--font-header);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-gold-solid);
+}
+
+.match-list-status {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+/* Standing Table */
+.standing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.standing-table th {
+  background-color: #111;
+  color: var(--color-gold-solid);
+  font-weight: 600;
+  text-align: center;
+  padding: 12px;
+  border-bottom: 2px solid var(--color-glass-border);
+}
+
+.standing-table td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.standing-table tr.highlight-team {
+  background-color: rgba(212, 175, 55, 0.1);
+  font-weight: bold;
+}
+
+.standing-table tr.highlight-team td {
+  border-top: 1px solid var(--color-gold-solid);
+  border-bottom: 1px solid var(--color-gold-solid);
+  color: var(--color-gold-hover);
+}

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initRouter();
   bindNextMatchWidget();
   initSquadFeatures();
+  bindMatchCenter();
 });
 
 function initRouter() {
@@ -205,6 +206,68 @@ function initSquadFeatures() {
         modal.classList.remove('is-visible');
       }
     });
+  }
+}
+
+function bindMatchCenter() {
+  // 경기 목록 바인딩
+  const container = document.getElementById('matchListContainer');
+  if (container) {
+    container.innerHTML = '';
+    if (typeof matchData !== 'undefined') {
+      matchData.forEach(match => {
+        const item = document.createElement('div');
+        item.className = `match-list-item ${match.status}`;
+        
+        let scoreOrTimeHtml = '';
+        if (match.status === 'finished') {
+          scoreOrTimeHtml = `<div class="match-list-score">${match.score.home} - ${match.score.away}</div>`;
+        } else {
+          scoreOrTimeHtml = `<div class="match-list-status">${match.time}</div>`;
+        }
+
+        const typeBadge = match.type === 'Home' ? '<span class="match-type-badge home">HOME</span>' : '<span class="match-type-badge">AWAY</span>';
+
+        item.innerHTML = `
+          <div>
+            <div class="match-list-meta">
+              ${typeBadge} ${match.date} @ ${match.venue}
+            </div>
+            <div class="match-list-teams">
+              성만 FC vs ${match.opponent}
+            </div>
+          </div>
+          ${scoreOrTimeHtml}
+        `;
+        container.appendChild(item);
+      });
+    }
+  }
+
+  // 순위표 바인딩
+  const tbody = document.getElementById('standingTableBody');
+  if (tbody) {
+    tbody.innerHTML = '';
+    if (typeof standingData !== 'undefined') {
+      standingData.forEach(row => {
+        const tr = document.createElement('tr');
+        if (row.teamName === '성만 FC') {
+          tr.className = 'highlight-team';
+        }
+
+        tr.innerHTML = `
+          <td>${row.rank}</td>
+          <td style="text-align:left; padding-left:20px;">${row.teamName}</td>
+          <td>${row.played}</td>
+          <td>${row.points}</td>
+          <td>${row.wins}</td>
+          <td>${row.draws}</td>
+          <td>${row.losses}</td>
+          <td>${row.gd > 0 ? '+' + row.gd : row.gd}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
   }
 }
 

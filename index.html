@@ -110,8 +110,38 @@
       </div>
     </div>
     <section id="matches" class="tab-section">
-      <div class="container">
-        <h2>매치 센터 영역</h2>
+      <div class="container matches-container">
+        <div class="section-header">
+          <h2>MATCH CENTER</h2>
+        </div>
+        <div class="matches-grid">
+          <div class="match-schedule-section">
+            <h3>경기 일정 및 결과</h3>
+            <div id="matchListContainer">
+              <!-- JS 동적 렌더링 -->
+            </div>
+          </div>
+          <div class="league-table-section">
+            <h3>K리그 1 실시간 순위표</h3>
+            <table class="standing-table">
+              <thead>
+                <tr>
+                  <th>순위</th>
+                  <th>구단명</th>
+                  <th>경기</th>
+                  <th>승점</th>
+                  <th>승</th>
+                  <th>무</th>
+                  <th>패</th>
+                  <th>득실차</th>
+                </tr>
+              </thead>
+              <tbody id="standingTableBody">
+                <!-- JS 동적 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
     <section id="fanzone" class="tab-section">
