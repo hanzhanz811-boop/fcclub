@@ -83,9 +83,32 @@
     </section>
     <section id="squad" class="tab-section">
       <div class="container">
-        <h2>선수단 영역</h2>
+        <div class="section-header">
+          <h2>SQUAD</h2>
+          <div class="squad-filters" id="squadFilters">
+            <button class="filter-btn active" data-position="ALL">전체</button>
+            <button class="filter-btn" data-position="GK">GK</button>
+            <button class="filter-btn" data-position="DF">DF</button>
+            <button class="filter-btn" data-position="MF">MF</button>
+            <button class="filter-btn" data-position="FW">FW</button>
+          </div>
+        </div>
+        <div class="squad-grid" id="squadGrid">
+          <!-- JS를 통해 카드들이 동적 렌더링됩니다. -->
+        </div>
       </div>
     </section>
+
+    <!-- 선수단 프로필 상세 모달 -->
+    <div class="modal" id="playerModal">
+      <div class="modal-overlay"></div>
+      <div class="modal-wrapper">
+        <button class="modal-close" id="modalClose" aria-label="닫기">&times;</button>
+        <div class="modal-body" id="modalBody">
+          <!-- JS를 통해 동적으로 채워집니다. -->
+        </div>
+      </div>
+    </div>
     <section id="matches" class="tab-section">
       <div class="container">
         <h2>매치 센터 영역</h2>
