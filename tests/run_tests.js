@@ -1,6 +1,18 @@
 const assert = require('assert');
 const { squadData, matchData, standingData } = require('../js/data.js');
 
+if (typeof global.localStorage === 'undefined') {
+  global.localStorage = {
+    store: {},
+    getItem(key) { return this.store[key] || null; },
+    setItem(key, value) { this.store[key] = String(value); },
+    removeItem(key) { delete this.store[key]; },
+    clear() { this.store = {}; }
+  };
+}
+
+const { CommunityManager } = require('../js/community.js');
+
 console.log('=== SUNGMAN FC DATA TEST SUITE ===\n');
 
 let allPassed = true;
@@ -114,12 +126,93 @@ function runRouterTests() {
   assert.ok(appJsCode.includes('window.location.hash'), 'app.js should use window.location.hash');
 }
 
+function runCommunityTests() {
+  localStorage.clear();
+  const manager = new CommunityManager();
+  
+  // 1. 초기 로드 및 기본글 탑재 테스트
+  const initialPosts = manager.loadPosts();
+  assert.ok(Array.isArray(initialPosts), 'loadPosts should return an array');
+  assert.ok(initialPosts.length > 0, 'Should load default posts if store is empty');
+  
+  // 2. 글 작성 테스트
+  const newPost = manager.createPost('테스트 제목', '작성자A', '본문 내용', 'pw123');
+  assert.strictEqual(newPost.title, '테스트 제목');
+  assert.strictEqual(newPost.author, '작성자A');
+  assert.strictEqual(newPost.likes, 0);
+  assert.ok(Array.isArray(newPost.comments));
+  assert.strictEqual(typeof newPost.id, 'number', 'Post ID must be a number');
+  assert.ok(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(newPost.createdAt), 'Post createdAt should match YYYY-MM-DD HH:MM format');
+  
+  const posts = manager.loadPosts();
+  const found = posts.find(p => p.id === newPost.id);
+  assert.ok(found, 'Created post must exist in loaded posts');
+  
+  // 2b. 실제 localStorage 영속성 및 타 인스턴스 연동 테스트
+  const manager2 = new CommunityManager();
+  const persistedPosts = manager2.loadPosts();
+  const foundPersisted = persistedPosts.find(p => p.id === newPost.id);
+  assert.ok(foundPersisted, 'Data must persist in localStorage across manager instances');
+  
+  // 3. 추천수 증가 테스트
+  const likesBefore = found.likes;
+  const likeSuccess = manager.likePost(newPost.id);
+  assert.strictEqual(likeSuccess, true, 'likePost should return true on success');
+  const updatedPosts = manager.loadPosts();
+  const updatedFound = updatedPosts.find(p => p.id === newPost.id);
+  assert.strictEqual(updatedFound.likes, likesBefore + 1, 'Likes count should increase by 1');
+  
+  // 4. 댓글 작성 테스트
+  const comment = manager.addComment(newPost.id, '댓글러', '댓글내용', 'cpw123');
+  assert.strictEqual(comment.author, '댓글러');
+  assert.strictEqual(comment.content, '댓글내용');
+  assert.strictEqual(typeof comment.id, 'number', 'Comment ID must be a number');
+  assert.ok(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(comment.createdAt), 'Comment createdAt should match YYYY-MM-DD HH:MM format');
+  
+  const postsWithComment = manager.loadPosts();
+  const postWithComment = postsWithComment.find(p => p.id === newPost.id);
+  assert.strictEqual(postWithComment.comments.length, 1, 'Should have exactly 1 comment');
+  assert.strictEqual(postWithComment.comments[0].id, comment.id);
+  
+  // 4b. 예외 케이스 / 오류 처리 검증 테스트
+  assert.strictEqual(manager.likePost(999999), false, 'likePost on invalid ID should return false');
+  assert.strictEqual(manager.addComment(999999, 'author', 'content', 'pw'), null, 'addComment on invalid ID should return null');
+  assert.strictEqual(manager.deletePost(999999, 'pw'), false, 'deletePost on invalid ID should return false');
+  assert.strictEqual(manager.deleteComment(newPost.id, 999999, 'pw'), false, 'deleteComment on invalid comment ID should return false');
+  assert.strictEqual(manager.deleteComment(999999, comment.id, 'pw'), false, 'deleteComment on invalid post ID should return false');
+  
+  // 5. 잘못된 비밀번호로 댓글 삭제 거부 테스트
+  const isDeletedCommentFail = manager.deleteComment(newPost.id, comment.id, 'wrong_pw');
+  assert.strictEqual(isDeletedCommentFail, false, 'Should fail to delete comment with wrong password');
+  
+  // 6. 올바른 비밀번호로 댓글 삭제 테스트
+  const isDeletedCommentSuccess = manager.deleteComment(newPost.id, comment.id, 'cpw123');
+  assert.strictEqual(isDeletedCommentSuccess, true, 'Should succeed to delete comment with correct password');
+  
+  const postsAfterCommentDelete = manager.loadPosts();
+  const postAfterCommentDelete = postsAfterCommentDelete.find(p => p.id === newPost.id);
+  assert.strictEqual(postAfterCommentDelete.comments.length, 0, 'Comment list should be empty after deletion');
+  
+  // 7. 잘못된 비밀번호로 게시글 삭제 거부 테스트
+  const isDeletedFail = manager.deletePost(newPost.id, 'wrong_password');
+  assert.strictEqual(isDeletedFail, false, 'Should fail to delete post with wrong password');
+  
+  // 8. 올바른 비밀번호로 게시글 삭제 테스트
+  const isDeletedSuccess = manager.deletePost(newPost.id, 'pw123');
+  assert.strictEqual(isDeletedSuccess, true, 'Should succeed to delete post with correct password');
+  
+  const finalPosts = manager.loadPosts();
+  const finalFound = finalPosts.find(p => p.id === newPost.id);
+  assert.strictEqual(finalFound, undefined, 'Post must be removed after deletion');
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
 runTestBlock('Standing Data Schema Tests (runStandingTests)', runStandingTests);
 runTestBlock('Specific Integrity Tests (runSpecificIntegrityTests)', runSpecificIntegrityTests);
 runTestBlock('Router Syntax Verification (runRouterTests)', runRouterTests);
+runTestBlock('Community CRUD Tests (runCommunityTests)', runCommunityTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');
