@@ -5,32 +5,33 @@ document.addEventListener('DOMContentLoaded', () => {
 function initRouter() {
   const navLinks = document.querySelectorAll('.nav-link');
   const sections = document.querySelectorAll('.tab-section');
+  const validTabs = ['home', 'club', 'squad', 'matches', 'fanzone'];
 
-  function switchTab(tabId) {
-    // URL Hash 동기화
-    if (window.location.hash !== `#${tabId}`) {
-      window.location.hash = tabId;
-    }
-
-    // 네비게이션 버튼 active 클래스 갱신
+  function switchTab(tabId, smooth = true) {
+    // 네비게이션 버튼 active 클래스 및 aria-current 갱신
     navLinks.forEach(link => {
       if (link.getAttribute('data-tab') === tabId) {
         link.classList.add('active');
+        link.setAttribute('aria-current', 'page');
       } else {
         link.classList.remove('active');
+        link.removeAttribute('aria-current');
       }
     });
 
-    // 섹션 활성화 제어
+    // 섹션 활성화 제어 및 웹 접근성(a11y) 적용
     sections.forEach(section => {
       if (section.id === tabId) {
         section.classList.add('active');
+        section.setAttribute('tabindex', '-1');
+        section.focus();
       } else {
         section.classList.remove('active');
+        section.removeAttribute('tabindex');
       }
     });
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
     
     // 게시판 탭일 경우 렌더링 리트리거
     if (tabId === 'fanzone' && typeof window.renderCommunity === 'function') {
@@ -43,24 +44,27 @@ function initRouter() {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const tabId = link.getAttribute('data-tab');
-      switchTab(tabId);
+      if (window.location.hash === `#${tabId}`) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        window.location.hash = tabId;
+      }
     });
   });
 
   // 초기 라우트 설정 (해시 존재 시 처리)
   const initialHash = window.location.hash.replace('#', '');
-  const validTabs = ['home', 'club', 'squad', 'matches', 'fanzone'];
   if (validTabs.includes(initialHash)) {
-    switchTab(initialHash);
+    switchTab(initialHash, false);
   } else {
-    switchTab('home');
+    window.location.hash = 'home';
   }
 
   // 해시 체인지 핸들러
   window.addEventListener('hashchange', () => {
     const tabId = window.location.hash.replace('#', '');
     if (validTabs.includes(tabId)) {
-      switchTab(tabId);
+      switchTab(tabId, false);
     }
   });
 }
