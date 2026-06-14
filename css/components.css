@@ -706,3 +706,30 @@
 .btn-danger:hover {
   background: #ff3333;
 }
+
+/* Community UI cleanups */
+.board-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.comment-empty {
+  padding: 10px 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.post-detail-title-h3 {
+  color: var(--color-gold-solid);
+  margin-bottom: 20px;
+  font-family: var(--font-header);
+}
+.post-actions .btn {
+  padding: 6px 15px;
+  font-size: 13px;
+}
+.comment-form .btn-submit {
+  grid-column: span 2;
+  margin-top: 5px;
+  padding: 8px 0;
+  width: 100%;
+}

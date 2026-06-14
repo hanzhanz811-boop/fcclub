@@ -143,3 +143,261 @@ class CommunityManager {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { CommunityManager };
 }
+
+// HTML Escaping Utility for XSS Prevention
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// UI 바인딩 및 이벤트 연결 (Fan Zone UI 기능 완성)
+let activePostId = null;
+const manager = new CommunityManager();
+
+function initCommunity() {
+  const btnOpenWrite = document.getElementById('btnOpenWrite');
+  if (btnOpenWrite) {
+    btnOpenWrite.addEventListener('click', renderWriteForm);
+  }
+  renderPostList();
+}
+
+function renderPostList() {
+  const listContainer = document.getElementById('boardList');
+  const postCountElement = document.getElementById('postCount');
+  if (!listContainer) return;
+
+  const posts = manager.loadPosts();
+  if (postCountElement) postCountElement.textContent = posts.length;
+
+  listContainer.innerHTML = '';
+  if (posts.length === 0) {
+    listContainer.innerHTML = '<div class="board-empty">등록된 게시글이 없습니다.</div>';
+    return;
+  }
+
+  posts.forEach(post => {
+    const card = document.createElement('div');
+    card.className = `board-item-card ${activePostId === post.id ? 'active' : ''}`;
+    card.innerHTML = `
+      <div class="board-item-title">${escapeHTML(post.title)}</div>
+      <div class="board-item-meta">
+        <span>✍ ${escapeHTML(post.author)}</span>
+        <span>📅 ${post.createdAt.slice(2, 10)} | 👍 ${post.likes} | 💬 ${post.comments.length}</span>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      activePostId = post.id;
+      renderPostList(); // 활성 상태 표시 업데이트
+      renderPostDetail(post.id);
+    });
+    listContainer.appendChild(card);
+  });
+}
+
+function renderWriteForm() {
+  const detailColumn = document.getElementById('boardDetailColumn');
+  if (!detailColumn) return;
+
+  detailColumn.innerHTML = `
+    <h3 class="post-detail-title-h3">새 글 작성</h3>
+    <form id="writePostForm">
+      <div class="fanzone-form-group">
+        <label for="postAuthor">작성자</label>
+        <input type="text" id="postAuthor" class="fanzone-input" placeholder="이름을 입력하세요" required maxLength="10">
+      </div>
+      <div class="fanzone-form-group">
+        <label for="postPassword">비밀번호 (삭제 시 필요)</label>
+        <input type="password" id="postPassword" class="fanzone-input" placeholder="비밀번호를 입력하세요" required maxLength="15">
+      </div>
+      <div class="fanzone-form-group">
+        <label for="postTitle">제목</label>
+        <input type="text" id="postTitle" class="fanzone-input" placeholder="제목을 입력하세요 (최대 30자)" required maxLength="30">
+      </div>
+      <div class="fanzone-form-group">
+        <label for="postContent">내용</label>
+        <textarea id="postContent" class="fanzone-textarea" placeholder="내용을 입력하세요" required></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="btnCancelWrite" class="btn btn-secondary">취소</button>
+        <button type="submit" class="btn btn-gold">등록</button>
+      </div>
+    </form>
+  `;
+
+  const cancelBtn = detailColumn.querySelector('#btnCancelWrite');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', resetDetailPlaceholder);
+  }
+  
+  const form = detailColumn.querySelector('#writePostForm');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const author = detailColumn.querySelector('#postAuthor').value;
+      const pass = detailColumn.querySelector('#postPassword').value;
+      const title = detailColumn.querySelector('#postTitle').value;
+      const content = detailColumn.querySelector('#postContent').value;
+
+      const newPost = manager.createPost(title, author, content, pass);
+      activePostId = newPost.id;
+      renderPostList();
+      renderPostDetail(newPost.id);
+    });
+  }
+}
+
+function renderPostDetail(postId) {
+  const detailColumn = document.getElementById('boardDetailColumn');
+  if (!detailColumn) return;
+
+  const posts = manager.loadPosts();
+  const post = posts.find(p => p.id === Number(postId));
+  if (!post) {
+    resetDetailPlaceholder();
+    return;
+  }
+
+  detailColumn.innerHTML = `
+    <div class="post-detail-header">
+      <h3 class="post-detail-title">${escapeHTML(post.title)}</h3>
+      <div class="post-detail-meta">
+        <span>작성자: <strong>${escapeHTML(post.author)}</strong></span>
+        <span>📅 ${post.createdAt}</span>
+      </div>
+    </div>
+    <div class="post-detail-content">${escapeHTML(post.content)}</div>
+    
+    <div class="post-actions">
+      <button id="btnLikePost" class="btn btn-gold">👍 추천 <span id="likeCount">${post.likes}</span></button>
+      <button id="btnDeletePost" class="btn btn-danger">삭제</button>
+    </div>
+
+    <div class="comments-section">
+      <h4>댓글 (<span id="commentCount">${post.comments.length}</span>)</h4>
+      <div id="commentList">
+        <!-- 댓글 목록 동적 주입 -->
+      </div>
+      
+      <form id="commentForm" class="comment-form">
+        <input type="text" id="commentAuthor" class="fanzone-input" placeholder="작성자" aria-label="댓글 작성자 이름" required maxLength="10">
+        <input type="password" id="commentPassword" class="fanzone-input" placeholder="비밀번호" aria-label="댓글 비밀번호" required maxLength="15">
+        <textarea id="commentText" class="fanzone-textarea" placeholder="댓글을 남겨보세요" aria-label="댓글 내용" required></textarea>
+        <button type="submit" class="btn btn-gold btn-submit">댓글 등록</button>
+      </form>
+    </div>
+  `;
+
+  // 추천 버튼 리스너
+  const likeBtn = detailColumn.querySelector('#btnLikePost');
+  if (likeBtn) {
+    likeBtn.addEventListener('click', () => {
+      manager.likePost(postId);
+      const updatedPost = manager.loadPosts().find(p => p.id === Number(postId));
+      const likeCountSpan = detailColumn.querySelector('#likeCount');
+      if (likeCountSpan) likeCountSpan.textContent = updatedPost.likes;
+      renderPostList();
+    });
+  }
+
+  // 삭제 버튼 리스너
+  const deleteBtn = detailColumn.querySelector('#btnDeletePost');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      const pass = prompt('삭제용 비밀번호를 입력해 주세요:');
+      if (pass === null) return;
+      
+      const success = manager.deletePost(postId, pass);
+      if (success) {
+        activePostId = null;
+        alert('게시글이 삭제되었습니다.');
+        renderPostList();
+        resetDetailPlaceholder();
+      } else {
+        alert('비밀번호가 일치하지 않습니다.');
+      }
+    });
+  }
+
+  // 댓글 목록 렌더링
+  renderComments(post.comments, postId);
+
+  // 댓글 등록 리스너
+  const commentForm = detailColumn.querySelector('#commentForm');
+  if (commentForm) {
+    commentForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const author = detailColumn.querySelector('#commentAuthor').value;
+      const pass = detailColumn.querySelector('#commentPassword').value;
+      const text = detailColumn.querySelector('#commentText').value;
+
+      manager.addComment(postId, author, text, pass);
+      renderPostDetail(postId);
+      renderPostList();
+    });
+  }
+}
+
+function renderComments(comments, postId) {
+  const list = document.getElementById('commentList');
+  if (!list) return;
+
+  list.innerHTML = '';
+  if (comments.length === 0) {
+    list.innerHTML = '<div class="comment-empty">등록된 댓글이 없습니다.</div>';
+    return;
+  }
+
+  comments.forEach(comment => {
+    const item = document.createElement('div');
+    item.className = 'comment-item';
+    item.innerHTML = `
+      <div class="comment-meta">
+        <span>💬 <strong>${escapeHTML(comment.author)}</strong> (${comment.createdAt})</span>
+        <button class="comment-delete-btn" data-id="${comment.id}">삭제</button>
+      </div>
+      <div class="comment-text">${escapeHTML(comment.content)}</div>
+    `;
+    
+    const deleteCommentBtn = item.querySelector('.comment-delete-btn');
+    if (deleteCommentBtn) {
+      deleteCommentBtn.addEventListener('click', () => {
+        const pass = prompt('댓글 삭제 비밀번호를 입력해 주세요:');
+        if (pass === null) return;
+        
+        const success = manager.deleteComment(postId, comment.id, pass);
+        if (success) {
+          alert('댓글이 삭제되었습니다.');
+          renderPostDetail(postId);
+          renderPostList();
+        } else {
+          alert('비밀번호가 일치하지 않습니다.');
+        }
+      });
+    }
+    list.appendChild(item);
+  });
+}
+
+function resetDetailPlaceholder() {
+  const detailColumn = document.getElementById('boardDetailColumn');
+  if (!detailColumn) return;
+
+  detailColumn.innerHTML = `
+    <div class="board-placeholder">
+      <div class="placeholder-icon" aria-hidden="true">💬</div>
+      <p>게시글을 선택하거나 새 글을 작성해 보세요.</p>
+    </div>
+  `;
+}
+
+// 브라우저 로딩 시 전역 바인딩을 위한 내보내기
+if (typeof window !== 'undefined') {
+  window.initCommunity = initCommunity;
+  window.renderCommunity = renderPostList; // 라우팅 시 갱신 연동
+}

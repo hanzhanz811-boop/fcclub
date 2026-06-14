@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
   bindNextMatchWidget();
   initSquadFeatures();
   bindMatchCenter();
+  if (typeof initCommunity === 'function') {
+    initCommunity();
+  }
 });
 
 function initRouter() {
