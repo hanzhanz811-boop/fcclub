@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { squadData, matchData, standingData } = require('../js/data.js');
+const { squadData, matchData, standingData, newsData } = require('../js/data.js');
 
 if (typeof global.localStorage === 'undefined') {
   global.localStorage = {
@@ -206,6 +206,19 @@ function runCommunityTests() {
   assert.strictEqual(finalFound, undefined, 'Post must be removed after deletion');
 }
 
+function runNewsTests() {
+  assert.ok(Array.isArray(newsData), 'newsData should be an array');
+  assert.strictEqual(newsData.length, 2, 'newsData should have exactly 2 news items');
+  
+  newsData.forEach((news, index) => {
+    const nStr = `News at index ${index} (${news.title || 'Unknown'})`;
+    assert.strictEqual(typeof news.id, 'number', `${nStr} must have a numeric id`);
+    assert.strictEqual(typeof news.date, 'string', `${nStr} must have a string date`);
+    assert.strictEqual(typeof news.title, 'string', `${nStr} must have a string title`);
+    assert.strictEqual(typeof news.content, 'string', `${nStr} must have a string content`);
+  });
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -213,6 +226,7 @@ runTestBlock('Standing Data Schema Tests (runStandingTests)', runStandingTests);
 runTestBlock('Specific Integrity Tests (runSpecificIntegrityTests)', runSpecificIntegrityTests);
 runTestBlock('Router Syntax Verification (runRouterTests)', runRouterTests);
 runTestBlock('Community CRUD Tests (runCommunityTests)', runCommunityTests);
+runTestBlock('News Data Schema Tests (runNewsTests)', runNewsTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');
