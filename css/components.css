@@ -1095,5 +1095,30 @@
   width: 100%;
 }
 
+.admin-form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.member-role-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.member-role-badge.admin {
+  background: rgba(212, 175, 55, 0.2);
+  color: var(--color-gold-solid);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.member-role-badge.user {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
 
 
