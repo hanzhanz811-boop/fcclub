@@ -988,6 +988,7 @@ function showSquadForm(playerId = null) {
   const heightVal = isEdit ? player.details.height : '';
   const weightVal = isEdit ? player.details.weight : '';
   const birthVal = isEdit ? player.details.birth : '';
+  const imageVal = isEdit ? player.image : '';
 
   let html = `
     <div class="admin-section-header">
@@ -1018,6 +1019,22 @@ function showSquadForm(playerId = null) {
             <option value="DF" ${positionVal === 'DF' ? 'selected' : ''}>수비수 (DF)</option>
             <option value="GK" ${positionVal === 'GK' ? 'selected' : ''}>골키퍼 (GK)</option>
           </select>
+        </div>
+      </div>
+
+      <!-- 프로필 이미지 업로드 그룹 추가 -->
+      <div class="admin-form-group">
+        <label for="squadFormImageFile">프로필 이미지 (사진 등록)</label>
+        <div style="display: flex; gap: 15px; align-items: center; margin-top: 5px;">
+          <div id="adminPlayerImagePreview" style="width: 80px; height: 80px; border-radius: 8px; border: 1px solid var(--color-glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,0.3); flex-shrink: 0;">
+            <!-- 미리보기 자동 노출 -->
+          </div>
+          <div style="flex: 1;">
+            <input type="file" id="squadFormImageFile" accept="image/*" style="display: none;" aria-label="선수 프로필 파일 선택">
+            <button type="button" class="btn btn-outline btn-sm" id="btnTriggerSquadUpload">이미지 업로드</button>
+            <button type="button" class="btn btn-outline btn-sm" id="btnRemoveSquadImage" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3); margin-left: 5px;">이미지 제거</button>
+            <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 5px; margin-bottom: 0;">권장 파일 크기: 1.5MB 이하</p>
+          </div>
         </div>
       </div>
 
@@ -1060,6 +1077,68 @@ function showSquadForm(playerId = null) {
 
   container.innerHTML = html;
 
+  const fileInput = document.getElementById('squadFormImageFile');
+  const triggerBtn = document.getElementById('btnTriggerSquadUpload');
+  const removeBtn = document.getElementById('btnRemoveSquadImage');
+  const previewDiv = document.getElementById('adminPlayerImagePreview');
+  const numberInput = document.getElementById('squadFormNumber');
+  
+  let loadedImageData = imageVal;
+
+  function updatePreview() {
+    if (loadedImageData && (loadedImageData.startsWith('data:image/') || loadedImageData.startsWith('http') || loadedImageData.startsWith('/'))) {
+      previewDiv.innerHTML = `<img src="${loadedImageData}" alt="업로드된 이미지" style="width: 100%; height: 100%; object-fit: cover;">`;
+    } else {
+      const displayNum = numberInput ? (numberInput.value || '?') : '?';
+      previewDiv.innerHTML = `<span style="font-size: 24px; color: var(--color-text-muted); font-weight: 800;">${displayNum}</span>`;
+    }
+  }
+
+  // 초기 렌더링
+  updatePreview();
+
+  // 등번호 입력 변화에 따른 플레이스홀더 동기화
+  if (numberInput) {
+    numberInput.addEventListener('input', () => {
+      if (!loadedImageData) updatePreview();
+    });
+  }
+
+  if (triggerBtn && fileInput) {
+    triggerBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // 크기 제한 1.5MB (1,500,000 bytes)
+        if (file.size > 1500000) {
+          alert('1.5MB 이하의 이미지만 업로드 가능합니다.');
+          fileInput.value = '';
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          loadedImageData = event.target.result;
+          updatePreview();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => {
+      loadedImageData = '';
+      if (fileInput) fileInput.value = '';
+      updatePreview();
+    });
+  }
+
   document.getElementById('btnCancelSquadForm').addEventListener('click', () => {
     renderAdminSquad();
   });
@@ -1090,7 +1169,7 @@ function showSquadForm(playerId = null) {
 
     const updatedStats = { matches, goals, assists };
     const updatedDetails = { height, weight, birth };
-    const image = `player_${position.toLowerCase()}_${number}`;
+    const image = loadedImageData || `player_${position.toLowerCase()}_${number}`;
 
     if (isEdit) {
       squadList = squadList.map(p => p.id === playerId ? { ...p, name, engName, number, position, stats: updatedStats, details: updatedDetails, image } : p);
