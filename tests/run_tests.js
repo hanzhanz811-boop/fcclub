@@ -707,6 +707,109 @@ function runSquadFormImageTests() {
   delete global.squadList;
 }
 
+function runPlayerImageIntegrationTests() {
+  const fs = require('fs');
+  const path = require('path');
+
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+
+  let squadGridHTML = '';
+  const mockSquadGrid = {
+    get innerHTML() {
+      return squadGridHTML;
+    },
+    set innerHTML(val) {
+      squadGridHTML = val;
+    },
+    appendChild: (child) => {
+      squadGridHTML += child.innerHTML;
+    }
+  };
+
+  global.document = {
+    getElementById: (id) => {
+      if (id === 'squadGrid') {
+        return mockSquadGrid;
+      }
+      return null;
+    },
+    createElement: (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        style: {},
+        setAttribute: () => {},
+        addEventListener: () => {},
+        classList: {
+          add: () => {},
+          remove: () => {}
+        },
+        innerHTML: ''
+      };
+      return el;
+    },
+    addEventListener: () => {},
+    querySelectorAll: () => [],
+    querySelector: () => null
+  };
+
+  global.window = {
+    addEventListener: () => {}
+  };
+
+  const appJsPath = path.join(__dirname, '../js/app.js');
+  const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+    Object.defineProperty(global, "squadList", {
+      get: () => squadList,
+      set: (val) => { squadList = val; },
+      configurable: true
+    });
+    global.renderSquad = renderSquad;
+  `;
+  eval(appJsCode);
+
+  // Setup mock squadList
+  global.squadList = [
+    {
+      id: 10,
+      name: '홍길동',
+      engName: 'Hong Gildong',
+      number: 10,
+      position: 'FW',
+      image: 'player_fw_10',
+      stats: { matches: 0, goals: 0, assists: 0 },
+      details: { height: 180, weight: 75, birth: '1995-01-01' }
+    },
+    {
+      id: 20,
+      name: '이순신',
+      engName: 'Yi Sunsin',
+      number: 20,
+      position: 'DF',
+      image: 'data:image/png;base64,abcdef',
+      stats: { matches: 0, goals: 0, assists: 0 },
+      details: { height: 185, weight: 80, birth: '1990-01-01' }
+    }
+  ];
+
+  // Run the renderSquad function
+  global.renderSquad('ALL');
+
+  // Verify Case A: Legacy image key 'player_fw_10' yields a placeholder
+  assert.ok(squadGridHTML.includes('player-img-placeholder'), 'Legacy image should yield player-img-placeholder class');
+  assert.ok(!squadGridHTML.includes('src="player_fw_10"'), 'Legacy image should not render as a source attribute');
+
+  // Verify Case B: Base64 image renders in an img tag
+  assert.ok(squadGridHTML.includes('src="data:image/png;base64,abcdef"'), 'Base64 image should render inside img src attribute');
+  assert.ok(squadGridHTML.includes('class="player-img"'), 'Base64 image should render with player-img class');
+
+  // Restore mocks
+  global.document = originalDocument;
+  global.window = originalWindow;
+  delete global.squadList;
+  delete global.renderSquad;
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -720,6 +823,7 @@ runTestBlock('User Data Initialization Tests (runUserDataInitializationTests)', 
 runTestBlock('Signup Nickname Validation Tests (runSignupNicknameValidationTests)', runSignupNicknameValidationTests);
 runTestBlock('Admin Member Management Dashboard Tests (runAdminMembersDashboardTests)', runAdminMembersDashboardTests);
 runTestBlock('Squad Form Image Preview and Validation Tests (runSquadFormImageTests)', runSquadFormImageTests);
+runTestBlock('Player Image Integration Tests (runPlayerImageIntegrationTests)', runPlayerImageIntegrationTests);
 
 
 // Print clean test report
