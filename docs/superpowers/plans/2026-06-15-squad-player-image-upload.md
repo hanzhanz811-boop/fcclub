@@ -18,7 +18,7 @@
 **Files:**
 - Modify: `css/components.css`
 
-- [ ] **Step 1: 선수 카드 이미지 래퍼 및 이미지 애니메이션 스타일 추가**
+- [x] **Step 1: 선수 카드 이미지 래퍼 및 이미지 애니메이션 스타일 추가**
   `css/components.css` 내의 `.player-img-placeholder` 아래에 새로운 `.player-img-wrapper` 및 `.player-img` 스타일 규칙을 추가합니다.
   ```css
   /* css/components.css 수정 (라인 245 부근, .player-img-placeholder 아래에 추가) */
@@ -44,7 +44,7 @@
   }
   ```
 
-- [ ] **Step 2: Git 커밋**
+- [x] **Step 2: Git 커밋**
   ```bash
   git add css/components.css
   git commit -m "style: add custom wrapper and scale transition classes for player images"
@@ -57,7 +57,7 @@
 **Files:**
 - Modify: `js/app.js`
 
-- [ ] **Step 1: renderSquad() 함수 내 이미지 조건부 렌더링 적용**
+- [x] **Step 1: renderSquad() 함수 내 이미지 조건부 렌더링 적용**
   `js/app.js` 내의 `renderSquad()` 함수에서 `player.image` 유효성(Base64 또는 유효 URL 여부)을 판별하여 이미지가 있을 때는 `<img>`를, 없을 때는 기존 플레이스홀더를 그리도록 변경합니다.
   ```javascript
   // js/app.js: renderSquad(positionFilter) 수정
@@ -93,7 +93,7 @@
   }
   ```
 
-- [ ] **Step 2: openPlayerModal() 함수 내 모달 프로필 액자 레이아웃 이식**
+- [x] **Step 2: openPlayerModal() 함수 내 모달 프로필 액자 레이아웃 이식**
   `openPlayerModal()`에서 헤더 좌측에 둥근 모서리가 적용된 이미지 요소가 동적으로 추가될 수 있도록 내장 HTML을 리뉴얼합니다.
   ```javascript
   // js/app.js: openPlayerModal(playerId) 수정
@@ -146,7 +146,7 @@
   }
   ```
 
-- [ ] **Step 3: Git 커밋**
+- [x] **Step 3: Git 커밋**
   ```bash
   git add js/app.js
   git commit -m "feat: render dynamic player images in squad grid cards and modal views"
@@ -159,7 +159,7 @@
 **Files:**
 - Modify: `js/app.js`
 
-- [ ] **Step 1: showSquadForm() 내 파일 입력 필드 및 미리보기 카드 마크업 설계**
+- [x] **Step 1: showSquadForm() 내 파일 입력 필드 및 미리보기 카드 마크업 설계**
   `showSquadForm` 내 HTML 문자열의 포지션 그룹 아래 영역에 파일 인풋, 미리보기 썸네일 박스, 기능 제어 버튼군(업로드 및 제거)을 기입합니다.
   ```javascript
   // js/app.js: showSquadForm(playerId) 수정
@@ -254,7 +254,7 @@
   // ... [이후 innerHTML 바인딩] ...
   ```
 
-- [ ] **Step 2: FileReader 및 파일 1.5MB 크기 초과 차단 보안 검증 리스너 연결**
+- [x] **Step 2: FileReader 및 파일 1.5MB 크기 초과 차단 보안 검증 리스너 연결**
   `showSquadForm` 안에서 변환 리스너를 구현하여 업로드 이벤트를 처리합니다.
   ```javascript
   // js/app.js: showSquadForm() 내부에 삽입 (innerHTML 렌더링 이후)
@@ -321,7 +321,7 @@
   }
   ```
 
-- [ ] **Step 3: 폼 전송 핸들러 수정 (Base64 파일 주소 동기화)**
+- [x] **Step 3: 폼 전송 핸들러 수정 (Base64 파일 주소 동기화)**
   폼 제출 시 `loadedImageData`를 `image` 값으로 저장하도록 고쳐 씁니다.
   ```javascript
   // js/app.js: showSquadForm() 내부 submit 리스너 수정
@@ -369,7 +369,7 @@
   });
   ```
 
-- [ ] **Step 4: Git 커밋**
+- [x] **Step 4: Git 커밋**
   ```bash
   git add js/app.js
   git commit -m "feat: bind file upload events and save base64 data to localStorage on admin squad save"
@@ -382,7 +382,7 @@
 **Files:**
 - Modify: `tests/run_tests.js`
 
-- [ ] **Step 1: tests/run_tests.js 에 파일 FileReader 동작 모의 및 저장 단위 테스트 추가**
+- [x] **Step 1: tests/run_tests.js 에 파일 FileReader 동작 모의 및 저장 단위 테스트 추가**
   `squadList`에 Base64 이미지가 들어가 있을 때 `renderSquad`가 이미지 요소를 정확하게 파싱하는지 확인하는 어설션을 작성합니다.
   ```javascript
   // tests/run_tests.js 추가 내용
@@ -453,11 +453,11 @@
   ```
   * `runTestBlock` 및 요약 출력 목록에 `runPlayerImageIntegrationTests`를 삽입합니다.
 
-- [ ] **Step 2: 테스트 전체 구동 및 성공 확인**
+- [x] **Step 2: 테스트 전체 구동 및 성공 확인**
   Run: `node tests/run_tests.js`
   Expected: PASS
 
-- [ ] **Step 3: Git 최종 커밋**
+- [x] **Step 3: Git 최종 커밋**
   ```bash
   git add tests/run_tests.js
   git commit -m "test: add integration test block for player image rendering logic"
