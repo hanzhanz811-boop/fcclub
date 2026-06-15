@@ -2,13 +2,21 @@ let newsList = [];
 let squadList = [];
 let matchList = [];
 let usersList = [];
-let isAdminLoggedIn = false;
+let currentUser = null;
 let activeAdminTab = 'news';
 let activeNewsId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   initLocalStorageData();
-  isAdminLoggedIn = sessionStorage.getItem('isAdminLoggedIn') === 'true';
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
+    }
+  } catch (e) {
+    currentUser = null;
+  }
+  updateNavbar();
+  bindAuthNavEvents();
   bindAdminFeatures();
   initRouter();
   bindNextMatchWidget();
@@ -98,13 +106,18 @@ function initRouter() {
 
 // switchTab 함수 수정: 데스크톱/모바일 탭 링크 모두 active 및 aria-current 토글하도록 수정
 function switchTab(tabId) {
-  if (tabId === 'admin-dashboard' && !isAdminLoggedIn) {
-    window.location.hash = 'admin-login';
-    return;
+  if (tabId === 'admin-dashboard') {
+    if (currentUser === null || currentUser.role !== 'admin') {
+      alert('관리자 권한이 없습니다.');
+      window.location.hash = 'home';
+      return;
+    }
   }
-  if (tabId === 'admin-login' && isAdminLoggedIn) {
-    window.location.hash = 'admin-dashboard';
-    return;
+  if (tabId === 'login' || tabId === 'signup') {
+    if (currentUser !== null) {
+      window.location.hash = 'home';
+      return;
+    }
   }
 
   const sections = document.querySelectorAll('.tab-section');
@@ -158,6 +171,12 @@ function switchTab(tabId) {
   }
   if (tabId === 'admin-dashboard') {
     renderAdminDashboard();
+  }
+  if (tabId === 'login') {
+    renderLoginTab();
+  }
+  if (tabId === 'signup') {
+    renderSignupTab();
   }
 }
 
@@ -1202,6 +1221,129 @@ function showMatchForm(matchId = null) {
     bindMatchCenter();
     renderAdminMatches();
   });
+}
+
+function updateNavbar() {
+  const isLoggedIn = currentUser !== null;
+  const isAdmin = isLoggedIn && currentUser.role === 'admin';
+
+  // 1. 데스크톱 네비게이션 갱신
+  const navUl = document.querySelector('nav ul');
+  if (navUl) {
+    // 기존 로그인/로그아웃 관련 항목 제거
+    const loginItems = navUl.querySelectorAll('.dynamic-auth-item');
+    loginItems.forEach(el => el.remove());
+
+    if (isLoggedIn) {
+      // 관리자 대시보드 링크 추가
+      if (isAdmin) {
+        const dashboardLi = document.createElement('li');
+        dashboardLi.className = 'dynamic-auth-item';
+        dashboardLi.innerHTML = `<a href="#admin-dashboard" class="nav-link" data-tab="admin-dashboard">Admin</a>`;
+        navUl.appendChild(dashboardLi);
+      }
+      
+      // 로그아웃 링크 추가
+      const logoutLi = document.createElement('li');
+      logoutLi.className = 'dynamic-auth-item';
+      logoutLi.innerHTML = `<a href="#logout" class="nav-link" id="navBtnLogout">로그아웃 (${escapeHTML(currentUser.nickname)}님)</a>`;
+      navUl.appendChild(logoutLi);
+    } else {
+      const loginLi = document.createElement('li');
+      loginLi.className = 'dynamic-auth-item';
+      loginLi.innerHTML = `<a href="#login" class="nav-link" data-tab="login">로그인</a>`;
+      navUl.appendChild(loginLi);
+    }
+  }
+
+  // 2. 모바일 네비게이션 바 갱신
+  const mobileNavBar = document.querySelector('.mobile-nav-bar');
+  const mobileUl = document.querySelector('.mobile-nav-bar ul');
+  if (mobileNavBar && mobileUl) {
+    const mobileAuthItems = mobileNavBar.querySelectorAll('.dynamic-mobile-auth');
+    mobileAuthItems.forEach(el => el.remove());
+
+    const mobileAuthLi = document.createElement('li');
+    mobileAuthLi.className = 'dynamic-mobile-auth';
+
+    const newMobileAuth = document.createElement('a');
+    newMobileAuth.className = 'mobile-nav-link dynamic-mobile-auth';
+    
+    if (isLoggedIn) {
+      newMobileAuth.href = '#logout';
+      newMobileAuth.id = 'mobileBtnLogout';
+      newMobileAuth.innerHTML = `
+        <div class="mobile-nav-icon">🔓</div>
+        <span>로그아웃</span>
+      `;
+    } else {
+      newMobileAuth.href = '#login';
+      newMobileAuth.setAttribute('data-tab', 'login');
+      newMobileAuth.innerHTML = `
+        <div class="mobile-nav-icon">🔑</div>
+        <span>로그인</span>
+      `;
+    }
+    mobileAuthLi.appendChild(newMobileAuth);
+    mobileUl.appendChild(mobileAuthLi);
+  }
+  
+  // 이벤트 바인딩 호출
+  bindAuthNavEvents();
+}
+
+function bindAuthNavEvents() {
+  // 로그아웃 버튼 이벤트 처리
+  const handleLogout = (e) => {
+    e.preventDefault();
+    currentUser = null;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('currentUser');
+    }
+    updateNavbar();
+    alert('로그아웃 되었습니다.');
+    window.location.hash = 'home';
+  };
+
+  const logoutBtn = document.getElementById('navBtnLogout');
+  if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+  const mobileLogoutBtn = document.getElementById('mobileBtnLogout');
+  if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', handleLogout);
+
+  // 새로 바인딩된 링크들 이벤트 라우터와 연동
+  const newLinks = document.querySelectorAll('.dynamic-auth-item a[data-tab], .dynamic-mobile-auth a[data-tab], .dynamic-mobile-auth[data-tab]');
+  newLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const tabId = this.getAttribute('data-tab');
+      if (tabId) {
+        window.location.hash = tabId;
+      }
+    });
+  });
+}
+
+function renderLoginTab() {
+  const errorEl = document.getElementById('loginErrorMsg');
+  if (errorEl) errorEl.textContent = '';
+  const emailInput = document.getElementById('loginEmail');
+  const pwInput = document.getElementById('loginPassword');
+  if (emailInput) emailInput.value = '';
+  if (pwInput) pwInput.value = '';
+}
+
+function renderSignupTab() {
+  const errorEl = document.getElementById('signupErrorMsg');
+  if (errorEl) errorEl.textContent = '';
+  const emailInput = document.getElementById('signupEmail');
+  const nickInput = document.getElementById('signupNickname');
+  const pwInput = document.getElementById('signupPassword');
+  const pwConfirmInput = document.getElementById('signupPasswordConfirm');
+  if (emailInput) emailInput.value = '';
+  if (nickInput) nickInput.value = '';
+  if (pwInput) pwInput.value = '';
+  if (pwConfirmInput) pwConfirmInput.value = '';
 }
 
 
