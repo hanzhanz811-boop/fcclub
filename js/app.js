@@ -272,13 +272,13 @@ function openPlayerModal(playerId) {
     : "";
 
   modalBody.innerHTML = `
-    <div class="player-modal-header">
+    <div class="player-modal-header" style="display: flex; gap: 20px; align-items: center;">
       ${imgHtml}
-      <div style="display: flex; align-items: center; gap: 20px;">
-        <div class="player-modal-badge">${player.number}</div>
+      <div style="flex: 1; display: flex; align-items: center; gap: 20px;">
+        <div class="player-modal-badge" style="font-size: 48px; font-weight: 800; color: var(--color-gold-solid);">${player.number}</div>
         <div class="player-modal-meta">
-          <h3 id="playerModalTitle">${escapeHTML(player.name)}</h3>
-          <p style="color:var(--color-text-muted)">${escapeHTML(player.engName)} | ${escapeHTML(player.position)}</p>
+          <h3 id="playerModalTitle" style="font-size: 24px; margin-bottom: 4px;">${escapeHTML(player.name)}</h3>
+          <p style="color:var(--color-text-muted); margin: 0;">${escapeHTML(player.engName)} | ${escapeHTML(player.position)}</p>
         </div>
       </div>
     </div>
