@@ -1,6 +1,7 @@
 let newsList = [];
 let squadList = [];
 let matchList = [];
+let usersList = [];
 let isAdminLoggedIn = false;
 let activeAdminTab = 'news';
 let activeNewsId = null;
@@ -32,10 +33,32 @@ function initLocalStorageData() {
     const initialMatches = (typeof matchData !== 'undefined') ? matchData : [];
     localStorage.setItem('matchData', JSON.stringify(initialMatches));
   }
+  if (!localStorage.getItem('userData')) {
+    const initialUsers = [
+      {
+        id: 1,
+        email: "admin@sungmanfc.com",
+        password: "admin1234",
+        nickname: "관리자",
+        role: "admin",
+        createdAt: "2026-06-15"
+      },
+      {
+        id: 2,
+        email: "user@sungmanfc.com",
+        password: "user1234",
+        nickname: "성만팬",
+        role: "user",
+        createdAt: "2026-06-15"
+      }
+    ];
+    localStorage.setItem('userData', JSON.stringify(initialUsers));
+  }
 
   newsList = JSON.parse(localStorage.getItem('newsData')) || [];
   squadList = JSON.parse(localStorage.getItem('squadData')) || [];
   matchList = JSON.parse(localStorage.getItem('matchData')) || [];
+  usersList = JSON.parse(localStorage.getItem('userData')) || [];
 }
 
 function initRouter() {

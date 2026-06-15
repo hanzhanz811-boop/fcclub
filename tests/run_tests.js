@@ -231,6 +231,113 @@ function runEscapeHTMLTests() {
   assert.strictEqual(escapeHTML(undefined), '');
 }
 
+function runUserDataInitializationTests() {
+  const fs = require('fs');
+  const path = require('path');
+  
+  localStorage.clear();
+  
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  const originalSessionStorage = global.sessionStorage;
+  
+  let domContentLoadedCallback = null;
+  global.document = {
+    getElementById: () => null,
+    querySelectorAll: () => [],
+    querySelector: () => null,
+    createElement: () => ({
+      setAttribute: () => {},
+      addEventListener: () => {},
+      appendChild: () => {},
+      querySelector: () => null,
+      classList: {
+        add: () => {},
+        remove: () => {}
+      }
+    }),
+    addEventListener: (event, callback) => {
+      if (event === 'DOMContentLoaded') {
+        domContentLoadedCallback = callback;
+      }
+    }
+  };
+  global.window = {
+    location: { hash: '' },
+    addEventListener: () => {},
+    scrollTo: () => {}
+  };
+  global.sessionStorage = {
+    getItem: () => 'false',
+    setItem: () => {}
+  };
+  
+  global.newsData = [];
+  global.squadData = [];
+  global.matchData = [];
+  global.bindAdminFeatures = () => {};
+  global.initRouter = () => {};
+  global.bindNextMatchWidget = () => {};
+  global.bindNewsWidget = () => {};
+  global.initSquadFeatures = () => {};
+  global.bindMatchCenter = () => {};
+  global.initCommunity = () => {};
+  
+  const appJsPath = path.join(__dirname, '../js/app.js');
+  const appJsCode = fs.readFileSync(appJsPath, 'utf8') + '\nObject.defineProperty(global, "usersList", { get: () => usersList, configurable: true });\nglobal.initLocalStorageData = initLocalStorageData;\n';
+  
+  eval(appJsCode);
+  
+  if (domContentLoadedCallback) {
+    domContentLoadedCallback();
+  }
+  
+  assert.ok(Array.isArray(global.usersList), 'global.usersList should be an array');
+  assert.strictEqual(global.usersList.length, 2, 'global.usersList should contain exactly 2 initial users');
+  
+  const adminUser = global.usersList.find(u => u.role === 'admin');
+  assert.ok(adminUser, 'Admin user should be initialized');
+  assert.strictEqual(adminUser.email, 'admin@sungmanfc.com');
+  assert.strictEqual(adminUser.password, 'admin1234');
+  assert.strictEqual(adminUser.nickname, '관리자');
+  assert.strictEqual(adminUser.id, 1);
+  assert.strictEqual(adminUser.createdAt, '2026-06-15');
+  
+  const regularUser = global.usersList.find(u => u.role === 'user');
+  assert.ok(regularUser, 'Regular user should be initialized');
+  assert.strictEqual(regularUser.email, 'user@sungmanfc.com');
+  assert.strictEqual(regularUser.password, 'user1234');
+  assert.strictEqual(regularUser.nickname, '성만팬');
+  assert.strictEqual(regularUser.id, 2);
+  assert.strictEqual(regularUser.createdAt, '2026-06-15');
+  
+  const storedData = localStorage.getItem('userData');
+  assert.ok(storedData, 'userData should exist in localStorage');
+  const parsedStored = JSON.parse(storedData);
+  assert.strictEqual(parsedStored.length, 2);
+  assert.strictEqual(parsedStored[0].email, 'admin@sungmanfc.com');
+  
+  localStorage.setItem('userData', JSON.stringify([{ id: 99, email: 'custom@example.com' }]));
+  global.initLocalStorageData();
+  assert.strictEqual(global.usersList.length, 1, 'Should load existing userData instead of overriding');
+  assert.strictEqual(global.usersList[0].email, 'custom@example.com');
+  
+  global.document = originalDocument;
+  global.window = originalWindow;
+  global.sessionStorage = originalSessionStorage;
+  
+  delete global.usersList;
+  delete global.newsList;
+  delete global.squadList;
+  delete global.matchList;
+  delete global.isAdminLoggedIn;
+  delete global.activeAdminTab;
+  delete global.activeNewsId;
+  delete global.initLocalStorageData;
+  delete global.initRouter;
+  delete global.switchTab;
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -240,6 +347,7 @@ runTestBlock('Router Syntax Verification (runRouterTests)', runRouterTests);
 runTestBlock('Community CRUD Tests (runCommunityTests)', runCommunityTests);
 runTestBlock('News Data Schema Tests (runNewsTests)', runNewsTests);
 runTestBlock('HTML Escaping Safety Tests (runEscapeHTMLTests)', runEscapeHTMLTests);
+runTestBlock('User Data Initialization Tests (runUserDataInitializationTests)', runUserDataInitializationTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');
