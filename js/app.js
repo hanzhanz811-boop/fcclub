@@ -282,7 +282,7 @@ function openPlayerModal(playerId) {
         </div>
       </div>
     </div>
-    <div>
+    <div style="margin-top: 15px;">
       <p><strong>생년월일:</strong> ${escapeHTML(player.details.birth)}</p>
       <p><strong>신체조건:</strong> ${player.details.height}cm / ${player.details.weight}kg</p>
     </div>
