@@ -9,70 +9,77 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initRouter() {
-  const navLinks = document.querySelectorAll('.nav-link');
-  const sections = document.querySelectorAll('.tab-section');
-  const validTabs = ['home', 'club', 'squad', 'matches', 'fanzone'];
+  // 기존 데스크톱 링크
+  const navLinks = document.querySelectorAll('nav a.nav-link');
+  // 모바일 링크
+  const mobileLinks = document.querySelectorAll('.mobile-nav-link');
 
-  function switchTab(tabId, smooth = true) {
-    // 네비게이션 버튼 active 클래스 및 aria-current 갱신
-    navLinks.forEach(link => {
-      if (link.getAttribute('data-tab') === tabId) {
-        link.classList.add('active');
-        link.setAttribute('aria-current', 'page');
-      } else {
-        link.classList.remove('active');
-        link.removeAttribute('aria-current');
-      }
-    });
-
-    // 섹션 활성화 제어 및 웹 접근성(a11y) 적용
-    sections.forEach(section => {
-      if (section.id === tabId) {
-        section.classList.add('active');
-        section.setAttribute('tabindex', '-1');
-        section.focus();
-      } else {
-        section.classList.remove('active');
-        section.removeAttribute('tabindex');
-      }
-    });
-
-    window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
-    
-    // 게시판 탭일 경우 렌더링 리트리거
-    if (tabId === 'fanzone' && typeof window.renderCommunity === 'function') {
-      window.renderCommunity();
-    }
+  function handleLinkClick(e) {
+    e.preventDefault();
+    const tabId = this.getAttribute('data-tab');
+    window.location.hash = tabId;
   }
 
-  // 클릭 이벤트 리스너 추가
-  navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const tabId = link.getAttribute('data-tab');
-      if (window.location.hash === `#${tabId}`) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        window.location.hash = tabId;
-      }
-    });
-  });
+  navLinks.forEach(link => link.addEventListener('click', handleLinkClick));
+  mobileLinks.forEach(link => link.addEventListener('click', handleLinkClick));
 
-  // 초기 라우트 설정 (해시 존재 시 처리)
-  const initialHash = window.location.hash.replace('#', '');
-  if (validTabs.includes(initialHash)) {
-    switchTab(initialHash, false);
-  } else {
-    window.location.hash = 'home';
-  }
-
-  // 해시 체인지 핸들러
   window.addEventListener('hashchange', () => {
-    const tabId = window.location.hash.replace('#', '');
-    if (validTabs.includes(tabId)) {
-      switchTab(tabId, false);
+    let hash = window.location.hash.substring(1);
+    if (!hash) hash = 'home';
+    switchTab(hash);
+  });
+
+  // 초기 로드 시 라우팅
+  let initialHash = window.location.hash.substring(1);
+  if (!initialHash) initialHash = 'home';
+  switchTab(initialHash);
+}
+
+// switchTab 함수 수정: 데스크톱/모바일 탭 링크 모두 active 및 aria-current 토글하도록 수정
+function switchTab(tabId) {
+  const sections = document.querySelectorAll('.tab-section');
+  sections.forEach(section => {
+    if (section.id === tabId) {
+      section.classList.add('active');
+      section.setAttribute('tabindex', '-1');
+      section.focus();
+    } else {
+      section.classList.remove('active');
+      section.removeAttribute('tabindex');
     }
   });
+
+  // 데스크톱 액티브 처리
+  const navLinks = document.querySelectorAll('nav a.nav-link');
+  navLinks.forEach(link => {
+    if (link.getAttribute('data-tab') === tabId) {
+      link.classList.add('active');
+      link.setAttribute('aria-current', 'page');
+    } else {
+      link.classList.remove('active');
+      link.removeAttribute('aria-current');
+    }
+  });
+
+  // 모바일 액티브 처리
+  const mobileLinks = document.querySelectorAll('.mobile-nav-link');
+  mobileLinks.forEach(link => {
+    if (link.getAttribute('data-tab') === tabId) {
+      link.classList.add('active');
+      link.setAttribute('aria-current', 'page');
+    } else {
+      link.classList.remove('active');
+      link.removeAttribute('aria-current');
+    }
+  });
+
+  // 탭 이동 시 상단 스크롤 복구
+  window.scrollTo(0, 0);
+
+  // 탭별 추가 액션
+  if (tabId === 'fanzone' && typeof window.renderCommunity === 'function') {
+    window.renderCommunity();
+  }
 }
 
 function bindNextMatchWidget() {

@@ -200,6 +200,15 @@ function renderPostList() {
   });
 }
 
+function scrollDetailIntoViewOnMobile() {
+  if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+    const detailColumn = document.getElementById('boardDetailColumn');
+    if (detailColumn && typeof detailColumn.scrollIntoView === 'function') {
+      detailColumn.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+}
+
 function renderWriteForm() {
   const detailColumn = document.getElementById('boardDetailColumn');
   if (!detailColumn) return;
@@ -250,6 +259,9 @@ function renderWriteForm() {
       renderPostDetail(newPost.id);
     });
   }
+
+  // 양식 렌더링 후 호출
+  scrollDetailIntoViewOnMobile();
 }
 
 function renderPostDetail(postId) {
@@ -341,6 +353,9 @@ function renderPostDetail(postId) {
       renderPostList();
     });
   }
+
+  // 상세 페이지 및 댓글창 렌더링 후 호출
+  scrollDetailIntoViewOnMobile();
 }
 
 function renderComments(comments, postId) {
