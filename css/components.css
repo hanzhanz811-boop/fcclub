@@ -500,8 +500,83 @@
   align-items: start;
 }
 @media (max-width: 768px) {
+  /* 홈(Home) - 히어로 배너 */
+  .hero-content h2 {
+    font-size: 28px;
+  }
+  .hero-content p {
+    font-size: 14px;
+  }
+  /* 홈(Home) - 뉴스 그리드 1열로 변경 */
+  .main-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* 구단(Club) - 소개 1열 변경 */
+  .club-details {
+    grid-template-columns: 1fr;
+  }
+
+  /* 선수단(Squad) - 필터 가로 스크롤 허용 및 스크롤바 숨김 */
+  .squad-filters {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    justify-content: flex-start;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  .squad-filters::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+  .filter-btn {
+    flex: 0 0 auto;
+  }
+  /* 선수단(Squad) - 카드 그리드 2열 튜닝 및 이미지 높이 축소 */
+  .squad-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  .player-img-placeholder {
+    height: 180px; /* 모바일 카드 비율 최적화 */
+  }
+
+  /* 선수단(Squad) - 스탯 모달창 92%로 확장 */
+  .modal-wrapper {
+    width: 92%;
+  }
+  .modal-body {
+    padding: 20px;
+  }
+  .player-modal-header {
+    padding-right: 35px; /* 방어 코드: 닫기 버튼과의 겹침 방지 */
+  }
+
+  /* 경기(Matches) - 경기 일정 및 순위표 세로 배치 */
+  .matches-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .standing-table {
+    min-width: 500px;
+  }
+
+  /* 팬존(Fan Zone) - 게시판 1열 배치 */
   .fanzone-layout {
     grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  /* 팬존(Fan Zone) - 하단 탭바 겹침 마진 확보 */
+  .board-detail-column {
+    margin-bottom: 20px;
   }
 }
 .board-list-column {
