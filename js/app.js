@@ -696,6 +696,8 @@ function renderAdminDashboard() {
     renderAdminSquad();
   } else if (activeAdminTab === 'matches') {
     renderAdminMatches();
+  } else if (activeAdminTab === 'members') {
+    renderAdminMembers();
   }
 }
 
@@ -1313,6 +1315,104 @@ function showMatchForm(matchId = null) {
     bindNextMatchWidget();
     bindMatchCenter();
     renderAdminMatches();
+  });
+}
+
+function renderAdminMembers() {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>회원 관리</h3>
+    </div>
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="width: 120px;">가입일자</th>
+            <th>이메일 주소</th>
+            <th style="width: 150px;">닉네임</th>
+            <th style="width: 120px; text-align: center;">등급</th>
+            <th style="width: 250px; text-align: center;">관리 작업</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (usersList.length === 0) {
+    html += `
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--color-text-muted);">등록된 회원이 없습니다.</td>
+          </tr>
+    `;
+  } else {
+    usersList.forEach(user => {
+      const isSelf = currentUser && currentUser.email === user.email;
+      const emailDisplay = isSelf ? `${escapeHTML(user.email)} (본인)` : escapeHTML(user.email);
+      const roleClass = user.role === 'admin' ? 'admin' : 'user';
+      const roleText = user.role === 'admin' ? '관리자' : '일반회원';
+      const toggleBtnText = user.role === 'admin' ? '일반회원으로 강등' : '관리자로 격상';
+      const disabledAttr = isSelf ? 'disabled' : '';
+
+      html += `
+          <tr>
+            <td>${escapeHTML(user.createdAt || '')}</td>
+            <td>${emailDisplay}</td>
+            <td>${escapeHTML(user.nickname)}</td>
+            <td style="text-align: center;">
+              <span class="member-role-badge ${roleClass}">${roleText}</span>
+            </td>
+            <td style="text-align: center;">
+              <div class="admin-actions" style="justify-content: center; gap: 8px;">
+                <button class="btn btn-outline btn-sm btn-toggle-role" data-id="${user.id}" ${disabledAttr}>${toggleBtnText}</button>
+                <button class="btn btn-outline btn-sm btn-delete-member" data-id="${user.id}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);" ${disabledAttr}>강퇴</button>
+              </div>
+            </td>
+          </tr>
+      `;
+    });
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Bind toggle role buttons
+  container.querySelectorAll('.btn-toggle-role').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      const user = usersList.find(u => u.id === id);
+      if (!user) return;
+      
+      const newRole = user.role === 'admin' ? 'user' : 'admin';
+      const newRoleName = newRole === 'admin' ? '관리자' : '일반회원';
+      
+      if (confirm(`회원 ${user.nickname}님의 권한을 ${newRoleName}로 변경하시겠습니까?`)) {
+        user.role = newRole;
+        localStorage.setItem('userData', JSON.stringify(usersList));
+        renderAdminMembers();
+      }
+    });
+  });
+
+  // Bind delete member buttons
+  container.querySelectorAll('.btn-delete-member').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      const user = usersList.find(u => u.id === id);
+      if (!user) return;
+
+      if (confirm(`회원 ${user.nickname}님을 정말 강제 탈퇴시키겠습니까?`)) {
+        usersList = usersList.filter(u => u.id !== id);
+        localStorage.setItem('userData', JSON.stringify(usersList));
+        renderAdminMembers();
+      }
+    });
   });
 }
 

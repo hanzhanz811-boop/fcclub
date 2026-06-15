@@ -432,6 +432,115 @@ function runSignupNicknameValidationTests() {
   delete global.bindAuthFeatures;
 }
 
+function runAdminMembersDashboardTests() {
+  const fs = require('fs');
+  const path = require('path');
+
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  
+  localStorage.clear();
+
+  let innerHTMLContent = '';
+  const toggleRoleButtons = [];
+  const deleteMemberButtons = [];
+
+  const mockContainer = {
+    get innerHTML() {
+      return innerHTMLContent;
+    },
+    set innerHTML(val) {
+      innerHTMLContent = val;
+    },
+    querySelectorAll: (selector) => {
+      if (selector === '.btn-toggle-role') {
+        return toggleRoleButtons;
+      }
+      if (selector === '.btn-delete-member') {
+        return deleteMemberButtons;
+      }
+      return [];
+    }
+  };
+
+  const createMockButton = (id, type) => {
+    const btn = {
+      getAttribute: (attr) => id.toString(),
+      addEventListener: (event, callback) => {
+        btn.clickCallback = callback;
+      }
+    };
+    if (type === 'toggle') toggleRoleButtons.push(btn);
+    if (type === 'delete') deleteMemberButtons.push(btn);
+    return btn;
+  };
+
+  global.document = {
+    getElementById: (id) => {
+      if (id === 'adminWorkContent') {
+        return mockContainer;
+      }
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener: () => {}
+  };
+
+  let confirmCalled = false;
+  let confirmMsg = '';
+  global.confirm = (msg) => {
+    confirmCalled = true;
+    confirmMsg = msg;
+    return true;
+  };
+
+  const appJsPath = path.join(__dirname, '../js/app.js');
+  const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+    Object.defineProperty(global, "currentUser", { get: () => currentUser, set: (val) => { currentUser = val; }, configurable: true });
+    Object.defineProperty(global, "usersList", { get: () => usersList, set: (val) => { usersList = val; }, configurable: true });
+    global.renderAdminMembers = renderAdminMembers;
+  `;
+  
+  eval(appJsCode);
+
+  global.usersList = [
+    { id: 1, email: 'admin@sungmanfc.com', nickname: '관리자', role: 'admin', createdAt: '2026-06-15' },
+    { id: 2, email: 'user@sungmanfc.com', nickname: '성만팬', role: 'user', createdAt: '2026-06-15' }
+  ];
+  global.currentUser = global.usersList[0];
+
+  createMockButton(2, 'toggle');
+  createMockButton(2, 'delete');
+
+  global.renderAdminMembers();
+
+  assert.ok(innerHTMLContent.includes('회원 관리'), 'Should contain "회원 관리" header');
+  assert.ok(innerHTMLContent.includes('admin@sungmanfc.com (본인)'), 'Should label the logged-in admin user as (본인)');
+  assert.ok(innerHTMLContent.includes('user@sungmanfc.com'), 'Should display user email');
+  assert.ok(innerHTMLContent.includes('관리자로 격상'), 'Should show action button "관리자로 격상" for user');
+  assert.ok(innerHTMLContent.includes('disabled'), 'Should disable buttons for self');
+
+  toggleRoleButtons[0].clickCallback();
+  assert.ok(confirmCalled, 'confirm should be called');
+  assert.ok(confirmMsg.includes('성만팬') && confirmMsg.includes('관리자'), 'Confirm message should contain nickname and target role');
+  assert.strictEqual(global.usersList[1].role, 'admin', 'Role should be toggled to admin');
+
+  confirmCalled = false;
+  confirmMsg = '';
+  deleteMemberButtons[0].clickCallback();
+  assert.ok(confirmCalled, 'confirm should be called');
+  assert.ok(confirmMsg.includes('성만팬') && confirmMsg.includes('강제 탈퇴'), 'Confirm message should contain nickname and delete notice');
+  assert.strictEqual(global.usersList.length, 1, 'User should be deleted');
+  assert.strictEqual(global.usersList[0].id, 1, 'Only admin should remain');
+
+  global.document = originalDocument;
+  global.window = originalWindow;
+  delete global.confirm;
+  delete global.usersList;
+  delete global.currentUser;
+  delete global.renderAdminMembers;
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -443,6 +552,7 @@ runTestBlock('News Data Schema Tests (runNewsTests)', runNewsTests);
 runTestBlock('HTML Escaping Safety Tests (runEscapeHTMLTests)', runEscapeHTMLTests);
 runTestBlock('User Data Initialization Tests (runUserDataInitializationTests)', runUserDataInitializationTests);
 runTestBlock('Signup Nickname Validation Tests (runSignupNicknameValidationTests)', runSignupNicknameValidationTests);
+runTestBlock('Admin Member Management Dashboard Tests (runAdminMembersDashboardTests)', runAdminMembersDashboardTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');
