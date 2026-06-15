@@ -237,7 +237,7 @@ function renderSquad(positionFilter = 'ALL') {
     );
 
     const imgHtml = isValidImage
-      ? `<div class="player-img-wrapper"><img src="${player.image}" alt="${escapeHTML(player.name)} 선수 프로필" class="player-img"></div>`
+      ? `<div class="player-img-wrapper"><img src="${escapeHTML(player.image)}" alt="${escapeHTML(player.name)} 선수 프로필" class="player-img" onerror="this.onerror=null; this.outerHTML='<div class=&quot;player-img-placeholder&quot;>${escapeHTML(String(player.number))}</div>';"></div>`
       : `<div class="player-img-placeholder">${player.number}</div>`;
 
     card.innerHTML = `
@@ -268,7 +268,7 @@ function openPlayerModal(playerId) {
   );
 
   const imgHtml = isValidImage
-    ? `<div class="player-modal-img-wrapper" style="width: 100px; height: 133px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-glass-border); background: rgba(0, 0, 0, 0.3); flex-shrink: 0;"><img src="${player.image}" alt="${escapeHTML(player.name)} 프로필 이미지" style="width: 100%; height: 100%; object-fit: cover;"></div>`
+    ? `<div class="player-modal-img-wrapper" style="width: 100px; height: 133px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-glass-border); background: rgba(0, 0, 0, 0.3); flex-shrink: 0;"><img src="${escapeHTML(player.image)}" alt="${escapeHTML(player.name)} 프로필 이미지" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.style.display='none'; this.parentElement.style.display='none';"></div>`
     : "";
 
   modalBody.innerHTML = `

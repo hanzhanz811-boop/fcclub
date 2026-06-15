@@ -698,6 +698,21 @@ function runSquadFormImageTests() {
   assert.strictEqual(appendedImg.style.height, '100%', 'IMG height style must be 100%');
   assert.strictEqual(appendedImg.style.objectFit, 'cover', 'IMG objectFit style must be cover');
 
+  // Test 5: Trigger file change with a file exceeding 1.5MB limit
+  alertMessage = '';
+  mockFileInput.value = 'large-image.png';
+  fileChangeCallback({
+    target: {
+      files: [{
+        name: 'large-image.png',
+        type: 'image/png',
+        size: 2000000
+      }]
+    }
+  });
+  assert.strictEqual(alertMessage, '1.5MB 이하의 이미지만 업로드 가능합니다.', 'Should alert on file exceeding 1.5MB');
+  assert.strictEqual(mockFileInput.value, '', 'Should reset file input value');
+
   // Clean up
   global.document = originalDocument;
   global.window = originalWindow;
