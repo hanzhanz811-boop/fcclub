@@ -11,7 +11,7 @@ if (typeof global.localStorage === 'undefined') {
   };
 }
 
-const { CommunityManager } = require('../js/community.js');
+const { CommunityManager, escapeHTML } = require('../js/community.js');
 
 console.log('=== SUNGMAN FC DATA TEST SUITE ===\n');
 
@@ -124,6 +124,8 @@ function runRouterTests() {
   const appJsCode = fs.readFileSync(appJsPath, 'utf8');
   assert.ok(appJsCode.includes('switchTab'), 'app.js should contain switchTab logic');
   assert.ok(appJsCode.includes('window.location.hash'), 'app.js should use window.location.hash');
+  assert.ok(appJsCode.includes('renderNewsPage'), 'app.js should contain renderNewsPage');
+  assert.ok(!appJsCode.includes('openNewsModal'), 'app.js should not contain openNewsModal');
 }
 
 function runCommunityTests() {
@@ -219,6 +221,15 @@ function runNewsTests() {
   });
 }
 
+function runEscapeHTMLTests() {
+  const escaped = escapeHTML('<div> & "hello" \' </div>');
+  assert.strictEqual(escaped, '&lt;div&gt; &amp; &quot;hello&quot; &#39; &lt;/div&gt;');
+  assert.strictEqual(escapeHTML(0), '0');
+  assert.strictEqual(escapeHTML(false), 'false');
+  assert.strictEqual(escapeHTML(null), '');
+  assert.strictEqual(escapeHTML(undefined), '');
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -227,6 +238,7 @@ runTestBlock('Specific Integrity Tests (runSpecificIntegrityTests)', runSpecific
 runTestBlock('Router Syntax Verification (runRouterTests)', runRouterTests);
 runTestBlock('Community CRUD Tests (runCommunityTests)', runCommunityTests);
 runTestBlock('News Data Schema Tests (runNewsTests)', runNewsTests);
+runTestBlock('HTML Escaping Safety Tests (runEscapeHTMLTests)', runEscapeHTMLTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');

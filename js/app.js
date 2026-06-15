@@ -1,3 +1,5 @@
+let activeNewsId = null;
+
 document.addEventListener('DOMContentLoaded', () => {
   initRouter();
   bindNextMatchWidget();
@@ -80,6 +82,9 @@ function switchTab(tabId) {
   // 탭별 추가 액션
   if (tabId === 'fanzone' && typeof window.renderCommunity === 'function') {
     window.renderCommunity();
+  }
+  if (tabId === 'news') {
+    renderNewsPage();
   }
 }
 
@@ -291,62 +296,134 @@ function bindNewsWidget() {
     const item = document.createElement('div');
     item.className = 'news-item';
     item.innerHTML = `
-      <div class="news-date">${news.date}</div>
-      <div class="news-title">${news.title}</div>
+      <div class="news-date">${escapeHTML(news.date)}</div>
+      <div class="news-title" role="button" tabindex="0">${escapeHTML(news.title)}</div>
     `;
     
-    // 클릭 시 모달 띄우기
     const titleEl = item.querySelector('.news-title');
     if (titleEl) {
-      titleEl.addEventListener('click', () => {
-        openNewsModal(news);
+      const selectAndRedirect = () => {
+        activeNewsId = news.id;
+        window.location.hash = 'news';
+      };
+      titleEl.addEventListener('click', selectAndRedirect);
+      titleEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectAndRedirect();
+        }
       });
     }
     container.appendChild(item);
   });
+}
 
-  // 뉴스 모달 제어 이벤트 바인딩
-  const modal = document.getElementById('newsModal');
-  const closeBtn = document.getElementById('closeNewsModal');
-  if (modal && closeBtn) {
-    // 닫기 버튼
-    closeBtn.addEventListener('click', closeNewsModal);
-    // 배경 클릭
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal || e.target.classList.contains('modal-wrapper')) {
-        closeNewsModal();
+function renderNewsPage() {
+  const listContainer = document.getElementById('newsTabList');
+  const detailContainer = document.getElementById('newsDetailColumn');
+  if (!listContainer || !detailContainer || typeof newsData === 'undefined') return;
+
+  if (newsData.length > 0) {
+    const exists = newsData.some(news => news.id === activeNewsId);
+    if (!exists) {
+      activeNewsId = newsData[0].id;
+    }
+  }
+
+  // Render news list
+  const existingCards = listContainer.querySelectorAll('.news-item-card');
+  if (existingCards.length === newsData.length) {
+    existingCards.forEach((card, index) => {
+      const news = newsData[index];
+      const titleEl = card.querySelector('.news-item-title');
+      const dateSpan = card.querySelector('.news-item-meta span');
+      if (titleEl) titleEl.textContent = news.title;
+      if (dateSpan) dateSpan.textContent = news.date;
+      const isActive = news.id === activeNewsId;
+      if (isActive) {
+        card.classList.add('active');
+        card.setAttribute('aria-pressed', 'true');
+      } else {
+        card.classList.remove('active');
+        card.setAttribute('aria-pressed', 'false');
       }
     });
-    // ESC 키 감지
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modal.classList.contains('active')) {
-        closeNewsModal();
-      }
+  } else {
+    listContainer.innerHTML = '';
+    newsData.forEach(news => {
+      const card = document.createElement('div');
+      card.className = `news-item-card${news.id === activeNewsId ? ' active' : ''}`;
+      card.setAttribute('data-id', news.id);
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('aria-pressed', news.id === activeNewsId ? 'true' : 'false');
+      
+      card.innerHTML = `
+        <div class="news-item-title">${escapeHTML(news.title)}</div>
+        <div class="news-item-meta">
+          <span>${escapeHTML(news.date)}</span>
+        </div>
+      `;
+      
+      const selectNews = () => {
+        activeNewsId = news.id;
+        renderNewsPage();
+        scrollNewsDetailIntoViewOnMobile();
+      };
+      
+      card.addEventListener('click', selectNews);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectNews();
+        }
+      });
+      
+      listContainer.appendChild(card);
     });
+  }
+
+  // Render active news detail
+  const activeNews = newsData.find(news => news.id === activeNewsId);
+  if (activeNews) {
+    detailContainer.innerHTML = `
+      <div class="news-detail-header">
+        <h3 class="news-detail-title">${escapeHTML(activeNews.title)}</h3>
+        <div class="news-detail-date">${escapeHTML(activeNews.date)}</div>
+      </div>
+      <div class="news-detail-body">${escapeHTML(activeNews.content)}</div>
+    `;
+  } else {
+    detailContainer.innerHTML = `
+      <div class="news-placeholder">
+        <p>조회된 뉴스가 없습니다.</p>
+      </div>
+    `;
   }
 }
 
-function openNewsModal(news) {
-  const modal = document.getElementById('newsModal');
-  const dateEl = document.getElementById('newsModalDate');
-  const titleEl = document.getElementById('newsModalTitle');
-  const contentEl = document.getElementById('newsModalContent');
-
-  if (modal && dateEl && titleEl && contentEl) {
-    dateEl.textContent = news.date;
-    titleEl.textContent = news.title;
-    contentEl.textContent = news.content;
-    modal.classList.add('active');
-    modal.setAttribute('tabindex', '-1');
-    modal.focus();
+function scrollNewsDetailIntoViewOnMobile() {
+  if (window.innerWidth <= 768) {
+    const detailCol = document.getElementById('newsDetailColumn');
+    if (detailCol) {
+      detailCol.scrollIntoView({ behavior: 'smooth' });
+      detailCol.setAttribute('tabindex', '-1');
+      detailCol.focus({ preventScroll: true });
+    }
   }
 }
 
-function closeNewsModal() {
-  const modal = document.getElementById('newsModal');
-  if (modal) {
-    modal.classList.remove('active');
-    modal.removeAttribute('tabindex');
-  }
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const s = String(str);
+  return s.replace(/[&<>'"]/g, 
+    tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag)
+  );
 }
 

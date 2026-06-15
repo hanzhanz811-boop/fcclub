@@ -13,12 +13,13 @@
   <header>
     <div class="container header-container">
       <a href="#home" class="logo">SUNGMAN <span>FC</span></a>
-      <nav>
+      <nav aria-label="데스크톱 네비게이션">
         <ul>
           <li><a href="#home" class="nav-link active" data-tab="home" aria-current="page">Home</a></li>
           <li><a href="#club" class="nav-link" data-tab="club">Club</a></li>
           <li><a href="#squad" class="nav-link" data-tab="squad">Squad</a></li>
           <li><a href="#matches" class="nav-link" data-tab="matches">Matches</a></li>
+          <li><a href="#news" class="nav-link" data-tab="news">News</a></li>
           <li><a href="#fanzone" class="nav-link" data-tab="fanzone">Fan Zone</a></li>
         </ul>
       </nav>
@@ -105,18 +106,7 @@
       </div>
     </div>
 
-    <!-- 뉴스 상세 모달 -->
-    <div class="modal" id="newsModal" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
-      <div class="modal-overlay"></div>
-      <div class="modal-wrapper">
-        <button class="modal-close" id="closeNewsModal" aria-label="닫기">&times;</button>
-        <div class="modal-body">
-          <div class="news-modal-date" id="newsModalDate"></div>
-          <h2 class="news-modal-title" id="newsModalTitle"></h2>
-          <div class="news-modal-content" id="newsModalContent"></div>
-        </div>
-      </div>
-    </div>
+
     <section id="matches" class="tab-section">
       <div class="container matches-container">
         <div class="section-header">
@@ -154,6 +144,28 @@
         </div>
       </div>
     </section>
+
+    <!-- News Tab -->
+    <section id="news" class="tab-section" aria-labelledby="news-heading">
+      <div class="container news-container">
+        <div class="section-header">
+          <h2 id="news-heading">NEWS</h2>
+        </div>
+        <div class="news-layout">
+          <!-- 왼쪽 영역: 뉴스 리스트 -->
+          <div class="news-list-column">
+            <div id="newsTabList" class="news-tab-list-items">
+              <!-- JS 동적 렌더링 -->
+            </div>
+          </div>
+          <!-- 오른쪽 영역: 동적 뉴스 상세 본문 -->
+          <article id="newsDetailColumn" class="news-detail-column">
+            <!-- JS 동적 렌더링 -->
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section id="fanzone" class="tab-section">
       <div class="container fanzone-container">
         <div class="section-header">
@@ -214,6 +226,14 @@
             <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
           </svg>
           <span>경기</span>
+        </a>
+      </li>
+      <li>
+        <a href="#news" class="mobile-nav-link" data-tab="news">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true" focusable="false">
+            <path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H5c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1zm-1-4H6v2h12v-2zm-4-4H6v2h8v-2zm4-4H6v2h12V7z"/>
+          </svg>
+          <span>뉴스</span>
         </a>
       </li>
       <li>

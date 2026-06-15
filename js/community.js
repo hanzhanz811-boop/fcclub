@@ -141,18 +141,22 @@ class CommunityManager {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CommunityManager };
+  module.exports = { CommunityManager, escapeHTML };
 }
 
 // HTML Escaping Utility for XSS Prevention
 function escapeHTML(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  if (str === null || str === undefined) return '';
+  const s = String(str);
+  return s.replace(/[&<>'"]/g, 
+    tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag)
+  );
 }
 
 // UI 바인딩 및 이벤트 연결 (Fan Zone UI 기능 완성)
