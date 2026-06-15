@@ -18,7 +18,7 @@
 **Files:**
 - Modify: `index.html`
 
-- [ ] **Step 1: 로그인 및 회원가입 화면 HTML 구조 추가**
+- [x] **Step 1: 로그인 및 회원가입 화면 HTML 구조 추가**
   `index.html` 내의 `#admin-dashboard` 아래에 새로운 `#login` 및 `#signup` 탭 섹션을 추가합니다.
   ```html
   <!-- index.html 수정 (라인 238-239 부근, #admin-dashboard 아래에 추가) -->
@@ -81,7 +81,7 @@
   </section>
   ```
 
-- [ ] **Step 2: 기존 admin-login 섹션 및 푸터 Admin 링크 제거/변경**
+- [x] **Step 2: 기존 admin-login 섹션 및 푸터 Admin 링크 제거/변경**
   `index.html`에서 기존 `#admin-login` 섹션을 완전히 제거하고, 푸터에 있는 `Admin` 링크를 `#login` 해시로 통합 변경합니다.
   * 기존 `#admin-login` `<section>` 전체 삭제.
   * 푸터 링크 수정:
@@ -94,7 +94,7 @@
     </footer>
     ```
 
-- [ ] **Step 3: Git 커밋**
+- [x] **Step 3: Git 커밋**
   ```bash
   git add index.html
   git commit -m "feat: add login and signup tab sections to HTML markup"
@@ -107,7 +107,7 @@
 **Files:**
 - Modify: `css/components.css`
 
-- [ ] **Step 1: 회원가입 폼 및 회원관리 탭 반응형 스타일 추가**
+- [x] **Step 1: 회원가입 폼 및 회원관리 탭 반응형 스타일 추가**
   `css/components.css` 파일 하단에 회원가입 특화 입력 폼 간격 및 회원 관리 테이블 배치를 위한 스타일을 기입합니다.
   ```css
   /* css/components.css 추가 내용 */
@@ -137,7 +137,7 @@
   }
   ```
 
-- [ ] **Step 2: Git 커밋**
+- [x] **Step 2: Git 커밋**
   ```bash
   git add css/components.css
   git commit -m "style: add custom badge and placeholder styles for auth"
@@ -150,7 +150,7 @@
 **Files:**
 - Modify: `js/app.js`
 
-- [ ] **Step 1: 회원 데이터 저장소 선언 및 초기화 로직 구현**
+- [x] **Step 1: 회원 데이터 저장소 선언 및 초기화 로직 구현**
   `js/app.js` 파일에 `usersList` 전역 상태 배열을 추가하고, `initLocalStorageData` 함수 내에 회원 계정 데이터베이스(`userData`)를 초기 설정하는 코드를 이식합니다.
   * 기존 변수 선언부에 추가:
     ```javascript
@@ -183,7 +183,7 @@
     usersList = JSON.parse(localStorage.getItem('userData')) || [];
     ```
 
-- [ ] **Step 2: Git 커밋**
+- [x] **Step 2: Git 커밋**
   ```bash
   git add js/app.js
   git commit -m "feat: initialize userData in localStorage on startup"
@@ -196,7 +196,7 @@
 **Files:**
 - Modify: `js/app.js`
 
-- [ ] **Step 1: 기존 로그인 세션 전역 변수를 sessionStorage에서 로드하는 방식으로 통합**
+- [x] **Step 1: 기존 로그인 세션 전역 변수를 sessionStorage에서 로드하는 방식으로 통합**
   `js/app.js` 상단 전역 변수에서 `isAdminLoggedIn` 대신 `currentUser` 세션 객체를 파싱하도록 수정합니다.
   ```javascript
   // 기존: let isAdminLoggedIn = false;
@@ -226,7 +226,7 @@
     });
     ```
 
-- [ ] **Step 2: switchTab 함수에 인증/인가 라우터 가드(Router Guard) 로직 구현**
+- [x] **Step 2: switchTab 함수에 인증/인가 라우터 가드(Router Guard) 로직 구현**
   * 로그인 여부와 역할(`admin`/`user`)에 따라 탭 이동 경로를 리다이렉트합니다.
   ```javascript
   // js/app.js: switchTab(tabId) 수정
@@ -263,7 +263,7 @@
   }
   ```
 
-- [ ] **Step 3: 네비게이션 메뉴 동적 업데이트 함수 `updateNavbar()` 추가 및 적용**
+- [x] **Step 3: 네비게이션 메뉴 동적 업데이트 함수 `updateNavbar()` 추가 및 적용**
   `updateNavbar()`를 호출하여 로그인 상태에 따라 헤더 및 모바일 메뉴의 로그인/로그아웃 버튼을 갱신합니다.
   ```javascript
   // js/app.js 에 추가
@@ -361,7 +361,7 @@
   ```
   * `DOMContentLoaded` 리스너 안에 `updateNavbar();` 호출을 삽입합니다.
 
-- [ ] **Step 4: Git 커밋**
+- [x] **Step 4: Git 커밋**
   ```bash
   git add js/app.js
   git commit -m "feat: implement auth router guards and dynamic navigation header"
@@ -374,7 +374,7 @@
 **Files:**
 - Modify: `js/app.js`
 
-- [ ] **Step 1: 로그인 및 회원가입 화면 렌더링 함수 구현**
+- [x] **Step 1: 로그인 및 회원가입 화면 렌더링 함수 구현**
   * `renderLoginTab()`, `renderSignupTab()` 함수 작성.
   ```javascript
   // js/app.js 에 추가
@@ -401,7 +401,7 @@
   }
   ```
 
-- [ ] **Step 2: 회원가입 및 로그인 폼 이벤트 바인딩**
+- [x] **Step 2: 회원가입 및 로그인 폼 이벤트 바인딩**
   * 이메일 중복 체크, 비밀번호 매칭, 정규식 이메일 유효성을 검증하는 회원가입 폼 제출 이벤트 바인딩.
   * 일치 계정 조회 후 세션 스토리지 `currentUser` 적재 및 네비게이션 헤더 변경을 처리하는 로그인 폼 제출 이벤트 바인딩.
   ```javascript
@@ -507,7 +507,7 @@
   ```
   * 기존 `bindAdminFeatures()` 내부에 있던 기존 관리자 로그인 이벤트 리스너 관련 로직은 사용하지 않으므로, 충돌 방지를 위해 기존 `bindAdminFeatures()` 내부의 로그인/로그아웃 부분은 제거하고 일반 메뉴 탭 바인딩만 남겨둡니다.
 
-- [ ] **Step 3: Git 커밋**
+- [x] **Step 3: Git 커밋**
   ```bash
   git add js/app.js
   git commit -m "feat: implement client-side signup and login forms logic"
@@ -521,7 +521,7 @@
 - Modify: `js/app.js`
 - Modify: `js/community.js`
 
-- [ ] **Step 1: js/community.js 내의 CommunityManager 로직 세션 기반으로 연동 수정**
+- [x] **Step 1: js/community.js 내의 CommunityManager 로직 세션 기반으로 연동 수정**
   게시글 및 댓글 삭제 권한을 `authorEmail` 또는 `admin` 권한 체크로 변경하고, 글/댓글 쓰기 함수가 회원 정보를 바인딩하도록 고쳐 씁니다.
   * `createPost` 매개변수를 비밀번호 기반에서 사용자 객체 기반으로 개편합니다.
   ```javascript
@@ -627,7 +627,7 @@
   }
   ```
 
-- [ ] **Step 2: js/app.js 커뮤니티(Fan Zone) 비회원 접근 및 비밀번호 폼 제거 갱신**
+- [x] **Step 2: js/app.js 커뮤니티(Fan Zone) 비회원 접근 및 비밀번호 폼 제거 갱신**
   * `renderCommunity()` 함수 안에서 글쓰기 폼 렌더링 시 현재 비밀번호 입력 필드를 완전히 제거하고, 글 작성 이벤트 동작 방식을 개정합니다.
   * "글쓰기" 버튼 클릭 핸들러 수정:
     ```javascript
@@ -689,7 +689,7 @@
     // 댓글 삭제 버튼 렌더링 (currentUser && (c.authorEmail === currentUser.email || currentUser.role === 'admin') 인 경우에만 노출)
     ```
 
-- [ ] **Step 3: Git 커밋**
+- [x] **Step 3: Git 커밋**
   ```bash
   git add js/app.js js/community.js
   git commit -m "feat: restrict fan zone actions to logged-in users and map author metadata"
@@ -703,7 +703,7 @@
 - Modify: `index.html`
 - Modify: `js/app.js`
 
-- [ ] **Step 1: index.html 관리자 네비게이션 칼럼에 회원관리 버튼 추가**
+- [x] **Step 1: index.html 관리자 네비게이션 칼럼에 회원관리 버튼 추가**
   ```html
   <!-- index.html 관리자 사이드바 탭 리스트 수정 -->
   <ul role="tablist" aria-label="관리자 작업 메뉴">
@@ -714,7 +714,7 @@
   </ul>
   ```
 
-- [ ] **Step 2: js/app.js 에 회원관리 목록 렌더링 및 기능 바인딩 구현**
+- [x] **Step 2: js/app.js 에 회원관리 목록 렌더링 및 기능 바인딩 구현**
   * `renderAdminMembers()`, `renderAdminWorkArea()`, `bindAdminFeatures()`를 회원 탭 분기에 매핑합니다.
   ```javascript
   // js/app.js: renderAdminWorkArea() 탭 조건 추가
@@ -808,7 +808,7 @@
   }
   ```
 
-- [ ] **Step 3: Git 커밋**
+- [x] **Step 3: Git 커밋**
   ```bash
   git add index.html js/app.js
   git commit -m "feat: implement user list rendering and control in admin dashboard"
@@ -821,7 +821,7 @@
 **Files:**
 - Modify: `tests/run_tests.js`
 
-- [ ] **Step 1: tests/run_tests.js 테스트 파일 로드 오류 해결 및 라우터 테스트 추가**
+- [x] **Step 1: tests/run_tests.js 테스트 파일 로드 오류 해결 및 라우터 테스트 추가**
   테스트 툴킷 내에서 `renderLoginTab`과 `renderSignupTab` 함수가 존재하고 올바르게 라우팅 동작에 매핑되는지 문자열 어설션 테스트를 삽입하고 수행합니다.
   ```javascript
   // tests/run_tests.js: runRouterTests() 에 추가
@@ -830,11 +830,11 @@
   assert.ok(appJsCode.includes('currentUser'), 'app.js should use currentUser session state');
   ```
 
-- [ ] **Step 2: 테스트 슈트 실행 및 전체 통과 검증**
+- [x] **Step 2: 테스트 슈트 실행 및 전체 통과 검증**
   Run: `node tests/run_tests.js`
   Expected: PASS
 
-- [ ] **Step 3: Git 커밋 및 최종 정리**
+- [x] **Step 3: Git 커밋 및 최종 정리**
   ```bash
   git add tests/run_tests.js
   git commit -m "test: verify authentication router configuration in tests"
