@@ -50,13 +50,8 @@
         </div>
         <div class="news-list">
           <h3>LATEST NEWS</h3>
-          <div class="news-item">
-            <div class="news-date">2026.06.12</div>
-            <div class="news-title">성만 FC, 하반기 전력 강화를 위한 국가대표 공격수 영입 임박</div>
-          </div>
-          <div class="news-item">
-            <div class="news-date">2026.06.10</div>
-            <div class="news-title">성만 아레나 홈 경기 가족 특별석 패키지 티켓 오픈 안내</div>
+          <div id="newsListContainer">
+            <!-- JS 동적 렌더링 -->
           </div>
         </div>
       </div>
@@ -106,6 +101,19 @@
         <button class="modal-close" id="modalClose" aria-label="닫기">&times;</button>
         <div class="modal-body" id="modalBody">
           <!-- JS를 통해 동적으로 채워집니다. -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 뉴스 상세 모달 -->
+    <div class="modal" id="newsModal" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
+      <div class="modal-overlay"></div>
+      <div class="modal-wrapper">
+        <button class="modal-close" id="closeNewsModal" aria-label="닫기">&times;</button>
+        <div class="modal-body">
+          <div class="news-modal-date" id="newsModalDate"></div>
+          <h2 class="news-modal-title" id="newsModalTitle"></h2>
+          <div class="news-modal-content" id="newsModalContent"></div>
         </div>
       </div>
     </div>

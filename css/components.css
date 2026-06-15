@@ -808,3 +808,26 @@
   padding: 8px 0;
   width: 100%;
 }
+
+/* News Modal Typography */
+.news-modal-date {
+  font-size: 14px;
+  color: var(--color-gold-solid);
+  margin-bottom: 10px;
+}
+.news-modal-title {
+  font-family: var(--font-header);
+  font-size: 24px;
+  color: #fff;
+  margin-bottom: 20px;
+  line-height: 1.4;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+}
+.news-modal-content {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #ddd;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
