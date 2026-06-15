@@ -1,6 +1,14 @@
+let newsList = [];
+let squadList = [];
+let matchList = [];
+let isAdminLoggedIn = false;
+let activeAdminTab = 'news';
 let activeNewsId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  initLocalStorageData();
+  isAdminLoggedIn = sessionStorage.getItem('isAdminLoggedIn') === 'true';
+  bindAdminFeatures();
   initRouter();
   bindNextMatchWidget();
   bindNewsWidget();
@@ -10,6 +18,25 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommunity();
   }
 });
+
+function initLocalStorageData() {
+  if (!localStorage.getItem('newsData')) {
+    const initialNews = (typeof newsData !== 'undefined') ? newsData : [];
+    localStorage.setItem('newsData', JSON.stringify(initialNews));
+  }
+  if (!localStorage.getItem('squadData')) {
+    const initialSquad = (typeof squadData !== 'undefined') ? squadData : [];
+    localStorage.setItem('squadData', JSON.stringify(initialSquad));
+  }
+  if (!localStorage.getItem('matchData')) {
+    const initialMatches = (typeof matchData !== 'undefined') ? matchData : [];
+    localStorage.setItem('matchData', JSON.stringify(initialMatches));
+  }
+
+  newsList = JSON.parse(localStorage.getItem('newsData')) || [];
+  squadList = JSON.parse(localStorage.getItem('squadData')) || [];
+  matchList = JSON.parse(localStorage.getItem('matchData')) || [];
+}
 
 function initRouter() {
   // 기존 데스크톱 링크
@@ -40,6 +67,15 @@ function initRouter() {
 
 // switchTab 함수 수정: 데스크톱/모바일 탭 링크 모두 active 및 aria-current 토글하도록 수정
 function switchTab(tabId) {
+  if (tabId === 'admin-dashboard' && !isAdminLoggedIn) {
+    window.location.hash = 'admin-login';
+    return;
+  }
+  if (tabId === 'admin-login' && isAdminLoggedIn) {
+    window.location.hash = 'admin-dashboard';
+    return;
+  }
+
   const sections = document.querySelectorAll('.tab-section');
   sections.forEach(section => {
     if (section.id === tabId) {
@@ -86,16 +122,21 @@ function switchTab(tabId) {
   if (tabId === 'news') {
     renderNewsPage();
   }
+  if (tabId === 'admin-login') {
+    renderAdminLogin();
+  }
+  if (tabId === 'admin-dashboard') {
+    renderAdminDashboard();
+  }
 }
 
 function bindNextMatchWidget() {
-  if (typeof matchData === 'undefined') return;
-  const upcomingMatch = matchData.find(m => m.status === 'upcoming');
+  const upcomingMatch = matchList.find(m => m.status === 'upcoming');
+  const opponentEl = document.getElementById('nextMatchOpponent');
+  const infoEl = document.getElementById('nextMatchInfo');
+  const ddayEl = document.getElementById('nextMatchDDay');
+
   if (upcomingMatch) {
-    const opponentEl = document.getElementById('nextMatchOpponent');
-    const infoEl = document.getElementById('nextMatchInfo');
-    const ddayEl = document.getElementById('nextMatchDDay');
-    
     if (opponentEl) opponentEl.textContent = upcomingMatch.opponent;
     if (infoEl) infoEl.textContent = `${upcomingMatch.date} ${upcomingMatch.time} @ ${upcomingMatch.venue}`;
     
@@ -117,6 +158,10 @@ function bindNextMatchWidget() {
       dDayText = 'D-DAY';
     }
     if (ddayEl) ddayEl.textContent = dDayText;
+  } else {
+    if (opponentEl) opponentEl.textContent = '예정된 경기가 없습니다.';
+    if (infoEl) infoEl.textContent = '-';
+    if (ddayEl) ddayEl.textContent = 'D-00';
   }
 }
 
@@ -125,8 +170,7 @@ function renderSquad(positionFilter = 'ALL') {
   if (!grid) return;
   grid.innerHTML = '';
 
-  if (typeof squadData === 'undefined') return;
-  const filtered = squadData.filter(player => positionFilter === 'ALL' || player.position === positionFilter);
+  const filtered = squadList.filter(player => positionFilter === 'ALL' || player.position === positionFilter);
 
   filtered.forEach(player => {
     const card = document.createElement('div');
@@ -136,8 +180,8 @@ function renderSquad(positionFilter = 'ALL') {
       <div class="player-number-badge">${player.number}</div>
       <div class="player-img-placeholder">${player.number}</div>
       <div class="player-info">
-        <div class="player-name">${player.name}</div>
-        <div class="player-pos">${player.position}</div>
+        <div class="player-name">${escapeHTML(player.name)}</div>
+        <div class="player-pos">${escapeHTML(player.position)}</div>
       </div>
     `;
     card.addEventListener('click', () => openPlayerModal(player.id));
@@ -146,8 +190,7 @@ function renderSquad(positionFilter = 'ALL') {
 }
 
 function openPlayerModal(playerId) {
-  if (typeof squadData === 'undefined') return;
-  const player = squadData.find(p => p.id === playerId);
+  const player = squadList.find(p => p.id === playerId);
   if (!player) return;
 
   const modal = document.getElementById('playerModal');
@@ -158,12 +201,12 @@ function openPlayerModal(playerId) {
     <div class="player-modal-header">
       <div class="player-modal-badge">${player.number}</div>
       <div class="player-modal-meta">
-        <h3>${player.name}</h3>
-        <p style="color:var(--color-text-muted)">${player.engName} | ${player.position}</p>
+        <h3 id="playerModalTitle">${player.name}</h3>
+        <p style="color:var(--color-text-muted)">${escapeHTML(player.engName)} | ${escapeHTML(player.position)}</p>
       </div>
     </div>
     <div>
-      <p><strong>생년월일:</strong> ${player.details.birth}</p>
+      <p><strong>생년월일:</strong> ${escapeHTML(player.details.birth)}</p>
       <p><strong>신체조건:</strong> ${player.details.height}cm / ${player.details.weight}kg</p>
     </div>
     <div class="player-stats-grid">
@@ -230,34 +273,32 @@ function bindMatchCenter() {
   const container = document.getElementById('matchListContainer');
   if (container) {
     container.innerHTML = '';
-    if (typeof matchData !== 'undefined') {
-      matchData.forEach(match => {
-        const item = document.createElement('div');
-        item.className = `match-list-item ${match.status}`;
-        
-        let scoreOrTimeHtml = '';
-        if (match.status === 'finished') {
-          scoreOrTimeHtml = `<div class="match-list-score">${match.score.home} - ${match.score.away}</div>`;
-        } else {
-          scoreOrTimeHtml = `<div class="match-list-status">${match.time}</div>`;
-        }
+    matchList.forEach(match => {
+      const item = document.createElement('div');
+      item.className = `match-list-item ${match.status}`;
+      
+      let scoreOrTimeHtml = '';
+      if (match.status === 'finished') {
+        scoreOrTimeHtml = `<div class="match-list-score">${match.score.home} - ${match.score.away}</div>`;
+      } else {
+        scoreOrTimeHtml = `<div class="match-list-status">${escapeHTML(match.time)}</div>`;
+      }
 
-        const typeBadge = match.type === 'Home' ? '<span class="match-type-badge home">HOME</span>' : '<span class="match-type-badge">AWAY</span>';
+      const typeBadge = match.type === 'Home' ? '<span class="match-type-badge home">HOME</span>' : '<span class="match-type-badge">AWAY</span>';
 
-        item.innerHTML = `
-          <div>
-            <div class="match-list-meta">
-              ${typeBadge} ${match.date} @ ${match.venue}
-            </div>
-            <div class="match-list-teams">
-              성만 FC vs ${match.opponent}
-            </div>
+      item.innerHTML = `
+        <div>
+          <div class="match-list-meta">
+            ${typeBadge} ${escapeHTML(match.date)} @ ${escapeHTML(match.venue)}
           </div>
-          ${scoreOrTimeHtml}
-        `;
-        container.appendChild(item);
-      });
-    }
+          <div class="match-list-teams">
+            성만 FC vs ${escapeHTML(match.opponent)}
+          </div>
+        </div>
+        ${scoreOrTimeHtml}
+      `;
+      container.appendChild(item);
+    });
   }
 
   // 순위표 바인딩
@@ -273,7 +314,7 @@ function bindMatchCenter() {
 
         tr.innerHTML = `
           <td>${row.rank}</td>
-          <td style="text-align:left; padding-left:20px;">${row.teamName}</td>
+          <td style="text-align:left; padding-left:20px;">${escapeHTML(row.teamName)}</td>
           <td>${row.played}</td>
           <td>${row.points}</td>
           <td>${row.wins}</td>
@@ -289,10 +330,10 @@ function bindMatchCenter() {
 
 function bindNewsWidget() {
   const container = document.getElementById('newsListContainer');
-  if (!container || typeof newsData === 'undefined') return;
+  if (!container) return;
 
   container.innerHTML = '';
-  newsData.forEach(news => {
+  newsList.forEach(news => {
     const item = document.createElement('div');
     item.className = 'news-item';
     item.innerHTML = `
@@ -321,20 +362,20 @@ function bindNewsWidget() {
 function renderNewsPage() {
   const listContainer = document.getElementById('newsTabList');
   const detailContainer = document.getElementById('newsDetailColumn');
-  if (!listContainer || !detailContainer || typeof newsData === 'undefined') return;
+  if (!listContainer || !detailContainer) return;
 
-  if (newsData.length > 0) {
-    const exists = newsData.some(news => news.id === activeNewsId);
+  if (newsList.length > 0) {
+    const exists = newsList.some(news => news.id === activeNewsId);
     if (!exists) {
-      activeNewsId = newsData[0].id;
+      activeNewsId = newsList[0].id;
     }
   }
 
   // Render news list
   const existingCards = listContainer.querySelectorAll('.news-item-card');
-  if (existingCards.length === newsData.length) {
+  if (existingCards.length === newsList.length) {
     existingCards.forEach((card, index) => {
-      const news = newsData[index];
+      const news = newsList[index];
       const titleEl = card.querySelector('.news-item-title');
       const dateSpan = card.querySelector('.news-item-meta span');
       if (titleEl) titleEl.textContent = news.title;
@@ -350,7 +391,7 @@ function renderNewsPage() {
     });
   } else {
     listContainer.innerHTML = '';
-    newsData.forEach(news => {
+    newsList.forEach(news => {
       const card = document.createElement('div');
       card.className = `news-item-card${news.id === activeNewsId ? ' active' : ''}`;
       card.setAttribute('data-id', news.id);
@@ -384,7 +425,7 @@ function renderNewsPage() {
   }
 
   // Render active news detail
-  const activeNews = newsData.find(news => news.id === activeNewsId);
+  const activeNews = newsList.find(news => news.id === activeNewsId);
   if (activeNews) {
     detailContainer.innerHTML = `
       <div class="news-detail-header">
@@ -426,4 +467,710 @@ function escapeHTML(str) {
     }[tag] || tag)
   );
 }
+
+/* ----------------- ADMIN CONTROLLER FEATURES ----------------- */
+
+function bindAdminFeatures() {
+  const loginForm = document.getElementById('adminLoginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const usernameInput = document.getElementById('adminUsername');
+      const passwordInput = document.getElementById('adminPassword');
+      const errorMsg = document.getElementById('adminLoginError');
+
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      const password = passwordInput ? passwordInput.value : '';
+
+      if (username === 'admin' && password === 'admin1234') {
+        isAdminLoggedIn = true;
+        sessionStorage.setItem('isAdminLoggedIn', 'true');
+        if (errorMsg) errorMsg.textContent = '';
+        if (usernameInput) usernameInput.value = '';
+        if (passwordInput) passwordInput.value = '';
+        window.location.hash = 'admin-dashboard';
+      } else {
+        if (errorMsg) errorMsg.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+      }
+    });
+  }
+
+  const logoutBtn = document.getElementById('btnAdminLogout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      isAdminLoggedIn = false;
+      sessionStorage.removeItem('isAdminLoggedIn');
+      window.location.hash = 'home';
+    });
+  }
+
+  const adminTabBtns = document.querySelectorAll('.admin-nav-btn[data-admin-tab]');
+  adminTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeAdminTab = btn.getAttribute('data-admin-tab');
+      renderAdminDashboard();
+    });
+  });
+}
+
+function renderAdminLogin() {
+  const errorMsg = document.getElementById('adminLoginError');
+  if (errorMsg) errorMsg.textContent = '';
+
+  const usernameInput = document.getElementById('adminUsername');
+  const passwordInput = document.getElementById('adminPassword');
+  if (usernameInput) usernameInput.value = '';
+  if (passwordInput) passwordInput.value = '';
+}
+
+function renderAdminDashboard() {
+  // Update admin nav buttons
+  const adminTabBtns = document.querySelectorAll('.admin-nav-btn[data-admin-tab]');
+  adminTabBtns.forEach(btn => {
+    const tabName = btn.getAttribute('data-admin-tab');
+    if (tabName === activeAdminTab) {
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+    } else {
+      btn.classList.remove('active');
+      btn.setAttribute('aria-selected', 'false');
+    }
+  });
+
+  // Update tab panel aria-labelledby
+  const workContent = document.getElementById('adminWorkContent');
+  if (workContent) {
+    const activeBtn = document.getElementById(`admin-tab-${activeAdminTab}`);
+    if (activeBtn) {
+      workContent.setAttribute('aria-labelledby', activeBtn.id);
+    }
+  }
+
+  // Render the active sub-tab content
+  if (activeAdminTab === 'news') {
+    renderAdminNews();
+  } else if (activeAdminTab === 'squad') {
+    renderAdminSquad();
+  } else if (activeAdminTab === 'matches') {
+    renderAdminMatches();
+  }
+}
+
+/* NEWS CRUD */
+function renderAdminNews() {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>뉴스 관리</h3>
+      <button class="btn btn-gold btn-sm" id="btnAdminAddNews">새 뉴스 등록</button>
+    </div>
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="width: 80px;">번호</th>
+            <th style="width: 120px;">날짜</th>
+            <th>제목</th>
+            <th style="width: 150px; text-align: center;">작업</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (newsList.length === 0) {
+    html += `
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--color-text-muted);">등록된 뉴스가 없습니다.</td>
+          </tr>
+    `;
+  } else {
+    newsList.forEach((news, idx) => {
+      html += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${escapeHTML(news.date)}</td>
+            <td style="text-align: left;">${escapeHTML(news.title)}</td>
+            <td style="text-align: center;">
+              <div class="admin-actions" style="justify-content: center;">
+                <button class="btn btn-outline btn-sm btn-edit-news" data-id="${news.id}">수정</button>
+                <button class="btn btn-outline btn-sm btn-delete-news" data-id="${news.id}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);">삭제</button>
+              </div>
+            </td>
+          </tr>
+      `;
+    });
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Bind add button
+  document.getElementById('btnAdminAddNews').addEventListener('click', () => {
+    showNewsForm();
+  });
+
+  // Bind edit buttons
+  container.querySelectorAll('.btn-edit-news').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      showNewsForm(id);
+    });
+  });
+
+  // Bind delete buttons
+  container.querySelectorAll('.btn-delete-news').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      if (confirm('정말로 이 뉴스를 삭제하시겠습니까?')) {
+        newsList = newsList.filter(n => n.id !== id);
+        localStorage.setItem('newsData', JSON.stringify(newsList));
+        
+        // Re-render admin and public tabs
+        renderAdminNews();
+        bindNewsWidget();
+        renderNewsPage();
+      }
+    });
+  });
+}
+
+function showNewsForm(newsId = null) {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  const isEdit = newsId !== null;
+  const news = isEdit ? newsList.find(n => n.id === newsId) : null;
+
+  const today = new Date();
+  const defaultDate = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+
+  const titleVal = isEdit ? news.title : '';
+  const dateVal = isEdit ? news.date : defaultDate;
+  const contentVal = isEdit ? news.content : '';
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>${isEdit ? '뉴스 수정' : '새 뉴스 등록'}</h3>
+    </div>
+    <form id="adminNewsForm" style="display: flex; flex-direction: column; gap: 15px;">
+      <div class="admin-form-group">
+        <label for="newsFormTitle">제목</label>
+        <input type="text" id="newsFormTitle" required value="${escapeHTML(titleVal)}" placeholder="뉴스 제목을 입력하세요">
+      </div>
+      <div class="admin-form-group">
+        <label for="newsFormDate">날짜 (YYYY.MM.DD)</label>
+        <input type="text" id="newsFormDate" required value="${escapeHTML(dateVal)}" placeholder="YYYY.MM.DD">
+      </div>
+      <div class="admin-form-group">
+        <label for="newsFormContent">내용</label>
+        <textarea id="newsFormContent" required rows="10" placeholder="뉴스 본문을 입력하세요" style="width: 100%; min-height: 150px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; padding: 10px; color: var(--color-text-primary); font-family: inherit; resize: vertical;">${escapeHTML(contentVal)}</textarea>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button type="submit" class="btn btn-gold" style="flex: 1;">저장</button>
+        <button type="button" class="btn btn-outline" id="btnCancelNewsForm" style="flex: 1;">취소</button>
+      </div>
+    </form>
+  `;
+
+  container.innerHTML = html;
+
+  document.getElementById('btnCancelNewsForm').addEventListener('click', () => {
+    renderAdminNews();
+  });
+
+  document.getElementById('adminNewsForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('newsFormTitle').value.trim();
+    const date = document.getElementById('newsFormDate').value.trim();
+    const content = document.getElementById('newsFormContent').value.trim();
+
+    if (!title || !date || !content) {
+      alert('모든 필드를 입력해 주세요.');
+      return;
+    }
+
+    if (isEdit) {
+      newsList = newsList.map(n => n.id === newsId ? { ...n, title, date, content } : n);
+    } else {
+      const nextId = newsList.length > 0 ? Math.max(...newsList.map(n => n.id)) + 1 : 1;
+      newsList.push({ id: nextId, title, date, content });
+    }
+
+    localStorage.setItem('newsData', JSON.stringify(newsList));
+
+    // Update public page and admin page
+    bindNewsWidget();
+    renderNewsPage();
+    renderAdminNews();
+  });
+}
+
+/* SQUAD CRUD */
+function renderAdminSquad() {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>선수단 관리</h3>
+      <button class="btn btn-gold btn-sm" id="btnAdminAddSquad">새 선수 등록</button>
+    </div>
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="width: 70px;">등번호</th>
+            <th>이름 (영문)</th>
+            <th style="width: 80px;">포지션</th>
+            <th style="width: 180px;">시즌 기록 (출장/득점/도움)</th>
+            <th style="width: 150px; text-align: center;">작업</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (squadList.length === 0) {
+    html += `
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--color-text-muted);">등록된 선수가 없습니다.</td>
+          </tr>
+    `;
+  } else {
+    const sortedSquad = [...squadList].sort((a, b) => a.number - b.number);
+    sortedSquad.forEach(player => {
+      html += `
+          <tr>
+            <td><strong>${player.number}</strong></td>
+            <td style="text-align: left;">
+              ${escapeHTML(player.name)}
+              <span style="font-size: 12px; color: var(--color-text-muted); margin-left: 5px;">(${escapeHTML(player.engName)})</span>
+            </td>
+            <td>${escapeHTML(player.position)}</td>
+            <td>${player.stats.matches}경기 / ${player.stats.goals}골 / ${player.stats.assists}도움</td>
+            <td style="text-align: center;">
+              <div class="admin-actions" style="justify-content: center;">
+                <button class="btn btn-outline btn-sm btn-edit-squad" data-id="${player.id}">수정</button>
+                <button class="btn btn-outline btn-sm btn-delete-squad" data-id="${player.id}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);">삭제</button>
+              </div>
+            </td>
+          </tr>
+      `;
+    });
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Bind add button
+  document.getElementById('btnAdminAddSquad').addEventListener('click', () => {
+    showSquadForm();
+  });
+
+  // Bind edit buttons
+  container.querySelectorAll('.btn-edit-squad').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      showSquadForm(id);
+    });
+  });
+
+  // Bind delete buttons
+  container.querySelectorAll('.btn-delete-squad').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      if (confirm('정말로 이 선수를 삭제하시겠습니까?')) {
+        squadList = squadList.filter(s => s.id !== id);
+        localStorage.setItem('squadData', JSON.stringify(squadList));
+        
+        // Re-render admin and public tabs
+        renderAdminSquad();
+        renderSquad();
+      }
+    });
+  });
+}
+
+function showSquadForm(playerId = null) {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  const isEdit = playerId !== null;
+  const player = isEdit ? squadList.find(p => p.id === playerId) : null;
+
+  const nameVal = isEdit ? player.name : '';
+  const engNameVal = isEdit ? player.engName : '';
+  const numberVal = isEdit ? player.number : '';
+  const positionVal = isEdit ? player.position : 'FW';
+  const matchesVal = isEdit ? player.stats.matches : 0;
+  const goalsVal = isEdit ? player.stats.goals : 0;
+  const assistsVal = isEdit ? player.stats.assists : 0;
+  const heightVal = isEdit ? player.details.height : '';
+  const weightVal = isEdit ? player.details.weight : '';
+  const birthVal = isEdit ? player.details.birth : '';
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>${isEdit ? '선수 프로필 수정' : '새 선수 등록'}</h3>
+    </div>
+    <form id="adminSquadForm" style="display: flex; flex-direction: column; gap: 15px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="squadFormName">이름</label>
+          <input type="text" id="squadFormName" required value="${escapeHTML(nameVal)}" placeholder="예: 김성민">
+        </div>
+        <div class="admin-form-group">
+          <label for="squadFormEngName">영문 이름</label>
+          <input type="text" id="squadFormEngName" required value="${escapeHTML(engNameVal)}" placeholder="예: KIM Sungmin">
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="squadFormNumber">등번호</label>
+          <input type="number" id="squadFormNumber" required min="1" max="99" value="${escapeHTML(numberVal)}" placeholder="예: 10">
+        </div>
+        <div class="admin-form-group">
+          <label for="squadFormPosition">포지션</label>
+          <select id="squadFormPosition" required style="width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; padding: 10px; color: var(--color-text-primary);">
+            <option value="FW" ${positionVal === 'FW' ? 'selected' : ''}>공격수 (FW)</option>
+            <option value="MF" ${positionVal === 'MF' ? 'selected' : ''}>미드필더 (MF)</option>
+            <option value="DF" ${positionVal === 'DF' ? 'selected' : ''}>수비수 (DF)</option>
+            <option value="GK" ${positionVal === 'GK' ? 'selected' : ''}>골키퍼 (GK)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="squadFormMatches">출장 경기수</label>
+          <input type="number" id="squadFormMatches" required min="0" value="${escapeHTML(matchesVal)}">
+        </div>
+        <div class="admin-form-group">
+          <label for="squadFormGoals">골</label>
+          <input type="number" id="squadFormGoals" required min="0" value="${escapeHTML(goalsVal)}">
+        </div>
+        <div class="admin-form-group">
+          <label for="squadFormAssists">도움</label>
+          <input type="number" id="squadFormAssists" required min="0" value="${escapeHTML(assistsVal)}">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="squadFormHeight">신장 (cm)</label>
+          <input type="number" id="squadFormHeight" required min="100" max="250" value="${escapeHTML(heightVal)}" placeholder="예: 183">
+        </div>
+        <div class="admin-form-group">
+          <label for="squadFormWeight">체중 (kg)</label>
+          <input type="number" id="squadFormWeight" required min="30" max="150" value="${escapeHTML(weightVal)}" placeholder="예: 78">
+        </div>
+        <div class="admin-form-group">
+          <label for="squadFormBirth">생년월일 (YYYY-MM-DD)</label>
+          <input type="text" id="squadFormBirth" required value="${escapeHTML(birthVal)}" placeholder="예: 1998-05-12">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button type="submit" class="btn btn-gold" style="flex: 1;">저장</button>
+        <button type="button" class="btn btn-outline" id="btnCancelSquadForm" style="flex: 1;">취소</button>
+      </div>
+    </form>
+  `;
+
+  container.innerHTML = html;
+
+  document.getElementById('btnCancelSquadForm').addEventListener('click', () => {
+    renderAdminSquad();
+  });
+
+  document.getElementById('adminSquadForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('squadFormName').value.trim();
+    const engName = document.getElementById('squadFormEngName').value.trim();
+    const number = parseInt(document.getElementById('squadFormNumber').value, 10);
+    const position = document.getElementById('squadFormPosition').value;
+    const matches = parseInt(document.getElementById('squadFormMatches').value, 10);
+    const goals = parseInt(document.getElementById('squadFormGoals').value, 10);
+    const assists = parseInt(document.getElementById('squadFormAssists').value, 10);
+    const height = parseInt(document.getElementById('squadFormHeight').value, 10);
+    const weight = parseInt(document.getElementById('squadFormWeight').value, 10);
+    const birth = document.getElementById('squadFormBirth').value.trim();
+
+    if (!name || !engName || isNaN(number) || !position || isNaN(matches) || isNaN(goals) || isNaN(assists) || isNaN(height) || isNaN(weight) || !birth) {
+      alert('모든 필드를 올바르게 입력해 주세요.');
+      return;
+    }
+
+    const duplicate = squadList.some(p => p.number === number && p.id !== playerId);
+    if (duplicate) {
+      alert(`등번호 ${number}번은 이미 다른 선수가 사용 중입니다.`);
+      return;
+    }
+
+    const updatedStats = { matches, goals, assists };
+    const updatedDetails = { height, weight, birth };
+    const image = `player_${position.toLowerCase()}_${number}`;
+
+    if (isEdit) {
+      squadList = squadList.map(p => p.id === playerId ? { ...p, name, engName, number, position, stats: updatedStats, details: updatedDetails, image } : p);
+    } else {
+      const nextId = squadList.length > 0 ? Math.max(...squadList.map(p => p.id)) + 1 : 1;
+      squadList.push({ id: nextId, name, engName, number, position, stats: updatedStats, details: updatedDetails, image });
+    }
+
+    localStorage.setItem('squadData', JSON.stringify(squadList));
+
+    // Update public page and admin page
+    renderSquad();
+    renderAdminSquad();
+  });
+}
+
+/* MATCHES CRUD */
+function renderAdminMatches() {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>경기 일정 및 결과 관리</h3>
+      <button class="btn btn-gold btn-sm" id="btnAdminAddMatch">새 경기 등록</button>
+    </div>
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="width: 120px;">일시</th>
+            <th style="width: 80px;">구분</th>
+            <th>상대팀</th>
+            <th>경기장</th>
+            <th style="width: 100px;">상태/결과</th>
+            <th style="width: 150px; text-align: center;">작업</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (matchList.length === 0) {
+    html += `
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--color-text-muted);">등록된 경기가 없습니다.</td>
+          </tr>
+    `;
+  } else {
+    const sortedMatches = [...matchList].sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
+    sortedMatches.forEach(match => {
+      let resultText = '';
+      if (match.status === 'finished') {
+        resultText = `${match.score.home} : ${match.score.away} (종료)`;
+      } else {
+        resultText = '대기중';
+      }
+
+      html += `
+          <tr>
+            <td>${escapeHTML(match.date)} ${escapeHTML(match.time)}</td>
+            <td>${match.type === 'Home' ? '<span style="color:var(--color-gold-solid)">HOME</span>' : 'AWAY'}</td>
+            <td style="text-align: left;">성만 FC vs ${escapeHTML(match.opponent)}</td>
+            <td>${escapeHTML(match.venue)}</td>
+            <td>${resultText}</td>
+            <td style="text-align: center;">
+              <div class="admin-actions" style="justify-content: center;">
+                <button class="btn btn-outline btn-sm btn-edit-match" data-id="${match.id}">수정</button>
+                <button class="btn btn-outline btn-sm btn-delete-match" data-id="${match.id}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);">삭제</button>
+              </div>
+            </td>
+          </tr>
+      `;
+    });
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Bind add button
+  document.getElementById('btnAdminAddMatch').addEventListener('click', () => {
+    showMatchForm();
+  });
+
+  // Bind edit buttons
+  container.querySelectorAll('.btn-edit-match').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      showMatchForm(id);
+    });
+  });
+
+  // Bind delete buttons
+  container.querySelectorAll('.btn-delete-match').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      if (confirm('정말로 이 경기 일정을 삭제하시겠습니까?')) {
+        matchList = matchList.filter(m => m.id !== id);
+        localStorage.setItem('matchData', JSON.stringify(matchList));
+        
+        // Re-render admin and public tabs
+        renderAdminMatches();
+        bindNextMatchWidget();
+        bindMatchCenter();
+      }
+    });
+  });
+}
+
+function showMatchForm(matchId = null) {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  const isEdit = matchId !== null;
+  const match = isEdit ? matchList.find(m => m.id === matchId) : null;
+
+  const opponentVal = isEdit ? match.opponent : '';
+  const dateVal = isEdit ? match.date : '';
+  const timeVal = isEdit ? match.time : '19:00';
+  const venueVal = isEdit ? match.venue : '성만 아레나';
+  const typeVal = isEdit ? match.type : 'Home';
+  const statusVal = isEdit ? match.status : 'upcoming';
+  const scoreHomeVal = (isEdit && match.score) ? match.score.home : 0;
+  const scoreAwayVal = (isEdit && match.score) ? match.score.away : 0;
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>${isEdit ? '경기 일정 수정' : '새 경기 등록'}</h3>
+    </div>
+    <form id="adminMatchForm" style="display: flex; flex-direction: column; gap: 15px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="matchFormOpponent">상대 구단명</label>
+          <input type="text" id="matchFormOpponent" required value="${escapeHTML(opponentVal)}" placeholder="예: 수원 삼성">
+        </div>
+        <div class="admin-form-group">
+          <label for="matchFormVenue">경기장</label>
+          <input type="text" id="matchFormVenue" required value="${escapeHTML(venueVal)}" placeholder="예: 성만 아레나">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="matchFormDate">일자 (YYYY-MM-DD)</label>
+          <input type="text" id="matchFormDate" required value="${escapeHTML(dateVal)}" placeholder="예: 2026-06-20">
+        </div>
+        <div class="admin-form-group">
+          <label for="matchFormTime">시간 (HH:MM)</label>
+          <input type="text" id="matchFormTime" required value="${escapeHTML(timeVal)}" placeholder="예: 19:00">
+        </div>
+        <div class="admin-form-group">
+          <label for="matchFormType">구분</label>
+          <select id="matchFormType" required style="width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; padding: 10px; color: var(--color-text-primary);">
+            <option value="Home" ${typeVal === 'Home' ? 'selected' : ''}>홈 (Home)</option>
+            <option value="Away" ${typeVal === 'Away' ? 'selected' : ''}>원정 (Away)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="matchFormStatus">경기 상태</label>
+          <select id="matchFormStatus" required style="width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; padding: 10px; color: var(--color-text-primary);">
+            <option value="upcoming" ${statusVal === 'upcoming' ? 'selected' : ''}>진행 예정 (upcoming)</option>
+            <option value="finished" ${statusVal === 'finished' ? 'selected' : ''}>경기 종료 (finished)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 경기 종료 시 스코어 입력 영역 -->
+      <div id="scoreInputArea" style="display: ${statusVal === 'finished' ? 'grid' : 'none'}; grid-template-columns: 1fr 1fr; gap: 15px; border: 1px dashed rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 6px;">
+        <div class="admin-form-group">
+          <label for="matchFormScoreHome">성만 FC 득점</label>
+          <input type="number" id="matchFormScoreHome" min="0" value="${escapeHTML(scoreHomeVal)}">
+        </div>
+        <div class="admin-form-group">
+          <label for="matchFormScoreAway">상대팀 득점</label>
+          <input type="number" id="matchFormScoreAway" min="0" value="${escapeHTML(scoreAwayVal)}">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button type="submit" class="btn btn-gold" style="flex: 1;">저장</button>
+        <button type="button" class="btn btn-outline" id="btnCancelMatchForm" style="flex: 1;">취소</button>
+      </div>
+    </form>
+  `;
+
+  container.innerHTML = html;
+
+  const statusSelect = document.getElementById('matchFormStatus');
+  const scoreArea = document.getElementById('scoreInputArea');
+  if (statusSelect && scoreArea) {
+    statusSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'finished') {
+        scoreArea.style.display = 'grid';
+      } else {
+        scoreArea.style.display = 'none';
+      }
+    });
+  }
+
+  document.getElementById('btnCancelMatchForm').addEventListener('click', () => {
+    renderAdminMatches();
+  });
+
+  document.getElementById('adminMatchForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const opponent = document.getElementById('matchFormOpponent').value.trim();
+    const venue = document.getElementById('matchFormVenue').value.trim();
+    const date = document.getElementById('matchFormDate').value.trim();
+    const time = document.getElementById('matchFormTime').value.trim();
+    const type = document.getElementById('matchFormType').value;
+    const status = document.getElementById('matchFormStatus').value;
+
+    if (!opponent || !venue || !date || !time || !type || !status) {
+      alert('모든 필수 필드를 입력해 주세요.');
+      return;
+    }
+
+    let score = null;
+    if (status === 'finished') {
+      const homeScoreVal = parseInt(document.getElementById('matchFormScoreHome').value, 10);
+      const awayScoreVal = parseInt(document.getElementById('matchFormScoreAway').value, 10);
+      if (isNaN(homeScoreVal) || isNaN(awayScoreVal)) {
+        alert('경기 종료 시 스코어를 올바르게 입력해 주세요.');
+        return;
+      }
+      score = { home: homeScoreVal, away: awayScoreVal };
+    }
+
+    if (isEdit) {
+      matchList = matchList.map(m => m.id === matchId ? { ...m, opponent, venue, date, time, type, status, score } : m);
+    } else {
+      const nextId = matchList.length > 0 ? Math.max(...matchList.map(m => m.id)) + 1 : 101;
+      matchList.push({ id: nextId, opponent, venue, date, time, type, status, score });
+    }
+
+    localStorage.setItem('matchData', JSON.stringify(matchList));
+
+    // Update public page and admin page
+    bindNextMatchWidget();
+    bindMatchCenter();
+    renderAdminMatches();
+  });
+}
+
 

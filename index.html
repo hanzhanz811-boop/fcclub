@@ -96,7 +96,7 @@
     </section>
 
     <!-- 선수단 프로필 상세 모달 -->
-    <div class="modal" id="playerModal">
+    <div class="modal" id="playerModal" role="dialog" aria-modal="true" aria-labelledby="playerModalTitle">
       <div class="modal-overlay"></div>
       <div class="modal-wrapper">
         <button class="modal-close" id="modalClose" aria-label="닫기">&times;</button>
@@ -192,6 +192,53 @@
         </div>
       </div>
     </section>
+
+    <!-- Admin Login Tab -->
+    <section id="admin-login" class="tab-section" aria-labelledby="admin-login-heading">
+      <div class="container admin-login-container">
+        <div class="card admin-login-card">
+          <h2 id="admin-login-heading">ADMIN LOGIN</h2>
+          <form id="adminLoginForm">
+            <div class="admin-form-group">
+              <label for="adminUsername">아이디</label>
+              <input type="text" id="adminUsername" required placeholder="Username">
+            </div>
+            <div class="admin-form-group">
+              <label for="adminPassword">비밀번호</label>
+              <input type="password" id="adminPassword" required placeholder="Password">
+            </div>
+            <div class="admin-error-msg" id="adminLoginError" aria-live="assertive"></div>
+            <button type="submit" class="btn btn-gold w-100">로그인</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Admin Dashboard Tab -->
+    <section id="admin-dashboard" class="tab-section" aria-labelledby="admin-dashboard-heading">
+      <div class="container admin-dashboard-container">
+        <div class="section-header">
+          <h2 id="admin-dashboard-heading">ADMIN DASHBOARD</h2>
+        </div>
+        <div class="admin-layout">
+          <!-- 왼쪽 영역: 서브 네비게이션 -->
+          <nav class="admin-nav-column" aria-label="관리자 메뉴">
+            <ul role="tablist" aria-label="관리자 작업 메뉴">
+              <li role="presentation"><button class="admin-nav-btn active" id="admin-tab-news" role="tab" aria-selected="true" aria-controls="adminWorkContent" data-admin-tab="news">뉴스 관리</button></li>
+              <li role="presentation"><button class="admin-nav-btn" id="admin-tab-squad" role="tab" aria-selected="false" aria-controls="adminWorkContent" data-admin-tab="squad">선수단 관리</button></li>
+              <li role="presentation"><button class="admin-nav-btn" id="admin-tab-matches" role="tab" aria-selected="false" aria-controls="adminWorkContent" data-admin-tab="matches">경기 관리</button></li>
+            </ul>
+            <div class="admin-nav-logout-wrapper">
+              <button class="admin-nav-btn logout-btn" id="btnAdminLogout">로그아웃</button>
+            </div>
+          </nav>
+          <!-- 오른쪽 영역: 동적 작업 공간 -->
+          <div id="adminWorkContent" class="admin-work-column" role="tabpanel" tabindex="0" aria-labelledby="admin-tab-news">
+            <!-- JS 동적 렌더링 -->
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <nav class="mobile-nav-bar" aria-label="모바일 네비게이션">
@@ -249,7 +296,7 @@
 
   <footer>
     <div class="container">
-      <p>&copy; 2026 SUNGMAN FC. All Rights Reserved.</p>
+      <p>&copy; 2026 SUNGMAN FC. All Rights Reserved. | <a href="#admin-login" class="admin-link" aria-label="관리자 로그인 페이지로 이동">Admin</a></p>
     </div>
   </footer>
 

@@ -125,6 +125,7 @@ function runRouterTests() {
   assert.ok(appJsCode.includes('switchTab'), 'app.js should contain switchTab logic');
   assert.ok(appJsCode.includes('window.location.hash'), 'app.js should use window.location.hash');
   assert.ok(appJsCode.includes('renderNewsPage'), 'app.js should contain renderNewsPage');
+  assert.ok(appJsCode.includes('renderAdminLogin'), 'app.js should contain renderAdminLogin');
   assert.ok(!appJsCode.includes('openNewsModal'), 'app.js should not contain openNewsModal');
 }
 

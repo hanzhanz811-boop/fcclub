@@ -10,6 +10,7 @@
   --color-text-muted: #aaaaaa;
   --color-glass-bg: rgba(22, 22, 22, 0.75);
   --color-glass-border: rgba(212, 175, 55, 0.15);
+  --color-danger: #ff4d4d;
   --font-header: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
   --max-width: 1200px;
