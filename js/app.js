@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   initRouter();
   bindNextMatchWidget();
+  bindNewsWidget();
   initSquadFeatures();
   bindMatchCenter();
   if (typeof initCommunity === 'function') {
@@ -278,6 +279,74 @@ function bindMatchCenter() {
         tbody.appendChild(tr);
       });
     }
+  }
+}
+
+function bindNewsWidget() {
+  const container = document.getElementById('newsListContainer');
+  if (!container || typeof newsData === 'undefined') return;
+
+  container.innerHTML = '';
+  newsData.forEach(news => {
+    const item = document.createElement('div');
+    item.className = 'news-item';
+    item.innerHTML = `
+      <div class="news-date">${news.date}</div>
+      <div class="news-title">${news.title}</div>
+    `;
+    
+    // 클릭 시 모달 띄우기
+    const titleEl = item.querySelector('.news-title');
+    if (titleEl) {
+      titleEl.addEventListener('click', () => {
+        openNewsModal(news);
+      });
+    }
+    container.appendChild(item);
+  });
+
+  // 뉴스 모달 제어 이벤트 바인딩
+  const modal = document.getElementById('newsModal');
+  const closeBtn = document.getElementById('closeNewsModal');
+  if (modal && closeBtn) {
+    // 닫기 버튼
+    closeBtn.addEventListener('click', closeNewsModal);
+    // 배경 클릭
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target.classList.contains('modal-wrapper')) {
+        closeNewsModal();
+      }
+    });
+    // ESC 키 감지
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('active')) {
+        closeNewsModal();
+      }
+    });
+  }
+}
+
+function openNewsModal(news) {
+  const modal = document.getElementById('newsModal');
+  const dateEl = document.getElementById('newsModalDate');
+  const titleEl = document.getElementById('newsModalTitle');
+  const contentEl = document.getElementById('newsModalContent');
+
+  if (modal && dateEl && titleEl && contentEl) {
+    dateEl.textContent = news.date;
+    titleEl.textContent = news.title;
+    contentEl.textContent = news.content;
+    modal.classList.add('active');
+    modal.setAttribute('tabindex', '-1');
+    modal.focus();
+  }
+}
+
+function closeNewsModal() {
+  const modal = document.getElementById('newsModal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.removeAttribute('tabindex');
   }
 }
 
