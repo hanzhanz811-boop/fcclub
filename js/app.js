@@ -1,6 +1,7 @@
 let newsList = [];
 let squadList = [];
 let matchList = [];
+// WARNING: Plaintext password storage in local storage is for client-side prototype/mock purposes only and must not be used in production.
 let usersList = [];
 let currentUser = null;
 let activeAdminTab = 'news';
@@ -252,7 +253,7 @@ function openPlayerModal(playerId) {
     <div class="player-modal-header">
       <div class="player-modal-badge">${player.number}</div>
       <div class="player-modal-meta">
-        <h3 id="playerModalTitle">${player.name}</h3>
+        <h3 id="playerModalTitle">${escapeHTML(player.name)}</h3>
         <p style="color:var(--color-text-muted)">${escapeHTML(player.engName)} | ${escapeHTML(player.position)}</p>
       </div>
     </div>
@@ -591,6 +592,12 @@ function bindAuthFeatures() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         if (errorEl) errorEl.textContent = '올바른 이메일 형식이 아닙니다.';
+        return;
+      }
+
+      // Validate nickname is not empty
+      if (!nickname) {
+        if (errorEl) errorEl.textContent = '닉네임을 입력해 주세요.';
         return;
       }
 

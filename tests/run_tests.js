@@ -352,6 +352,67 @@ function runUserDataInitializationTests() {
   delete global.initCommunity;
 }
 
+function runSignupNicknameValidationTests() {
+  const fs = require('fs');
+  const path = require('path');
+
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+
+  let signupSubmitCallback = null;
+  const errorMsgEl = { textContent: '' };
+  
+  const mockElements = {
+    'memberLoginForm': null,
+    'memberSignupForm': {
+      addEventListener: (event, callback) => {
+        if (event === 'submit') {
+          signupSubmitCallback = callback;
+        }
+      }
+    },
+    'signupEmail': { value: 'test@example.com' },
+    'signupNickname': { value: '   ' }, // empty nickname after trim
+    'signupPassword': { value: 'password123' },
+    'signupPasswordConfirm': { value: 'password123' },
+    'signupErrorMsg': errorMsgEl
+  };
+
+  global.document = {
+    getElementById: (id) => mockElements[id] || null,
+    querySelectorAll: () => [],
+    addEventListener: () => {}
+  };
+  global.window = {
+    location: { hash: '' }
+  };
+
+  const appJsPath = path.join(__dirname, '../js/app.js');
+  const appJsCode = fs.readFileSync(appJsPath, 'utf8') + '\nglobal.bindAuthFeatures = bindAuthFeatures;\n';
+  
+  eval(appJsCode);
+
+  global.bindAuthFeatures();
+
+  assert.ok(signupSubmitCallback, 'Signup submit callback should be registered');
+  
+  // Trigger form submission
+  let preventDefaultCalled = false;
+  const mockEvent = {
+    preventDefault: () => { preventDefaultCalled = true; }
+  };
+  
+  signupSubmitCallback(mockEvent);
+  
+  assert.ok(preventDefaultCalled, 'preventDefault should be called');
+  assert.strictEqual(errorMsgEl.textContent, '닉네임을 입력해 주세요.', 'Error message should complain about empty nickname');
+
+  // Clean up
+  global.document = originalDocument;
+  global.window = originalWindow;
+  delete global.bindAuthFeatures;
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -362,6 +423,7 @@ runTestBlock('Community CRUD Tests (runCommunityTests)', runCommunityTests);
 runTestBlock('News Data Schema Tests (runNewsTests)', runNewsTests);
 runTestBlock('HTML Escaping Safety Tests (runEscapeHTMLTests)', runEscapeHTMLTests);
 runTestBlock('User Data Initialization Tests (runUserDataInitializationTests)', runUserDataInitializationTests);
+runTestBlock('Signup Nickname Validation Tests (runSignupNicknameValidationTests)', runSignupNicknameValidationTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');
