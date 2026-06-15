@@ -541,6 +541,172 @@ function runAdminMembersDashboardTests() {
   delete global.renderAdminMembers;
 }
 
+function runSquadFormImageTests() {
+  const fs = require('fs');
+  const path = require('path');
+
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  const originalAlert = global.alert;
+  const originalFileReader = global.FileReader;
+
+  let innerHTMLContent = '';
+  const mockContainer = {
+    get innerHTML() { return innerHTMLContent; },
+    set innerHTML(val) { innerHTMLContent = val; }
+  };
+
+  const previewChildren = [];
+  const mockPreviewDiv = {
+    get innerHTML() { return innerHTMLContent; },
+    set innerHTML(val) { innerHTMLContent = val; },
+    appendChild(child) {
+      previewChildren.push(child);
+    }
+  };
+
+  let fileChangeCallback = null;
+  const mockFileInput = {
+    value: 'dummy',
+    addEventListener: (event, callback) => {
+      if (event === 'change') {
+        fileChangeCallback = callback;
+      }
+    }
+  };
+
+  const createdElements = [];
+  global.document = {
+    getElementById: (id) => {
+      if (id === 'adminWorkContent') return mockContainer;
+      if (id === 'adminPlayerImagePreview') return mockPreviewDiv;
+      if (id === 'squadFormImageFile') return mockFileInput;
+      return {
+        value: '',
+        addEventListener: () => {},
+        style: {}
+      };
+    },
+    createElement: (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        style: {},
+        setAttribute: () => {},
+        appendChild: () => {}
+      };
+      createdElements.push(el);
+      return el;
+    },
+    querySelectorAll: () => [],
+    addEventListener: () => {}
+  };
+
+  let alertMessage = '';
+  global.alert = (msg) => {
+    alertMessage = msg;
+  };
+
+  // Mock FileReader
+  let fileReaderInstance = null;
+  global.FileReader = class {
+    constructor() {
+      fileReaderInstance = this;
+    }
+    readAsDataURL(file) {
+      this.file = file;
+    }
+  };
+
+  // Load app.js and expose showSquadForm
+  const appJsPath = path.join(__dirname, '../js/app.js');
+  const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+    global.showSquadForm = showSquadForm;
+    global.squadList = squadList;
+  `;
+  eval(appJsCode);
+
+  // Invoke showSquadForm
+  global.showSquadForm();
+
+  // Test 1: Check initial rendering calls updatePreview, which shouldn't have img because loadedImageData is empty initially
+  assert.strictEqual(previewChildren.length, 0, 'Should not have appended any image child initially');
+
+  // Test 2: Trigger file change with a non-image file
+  alertMessage = '';
+  mockFileInput.value = 'invalid-image.txt';
+  fileChangeCallback({
+    target: {
+      files: [{
+        name: 'test.txt',
+        type: 'text/plain',
+        size: 500
+      }]
+    }
+  });
+  assert.strictEqual(alertMessage, '이미지 파일만 업로드할 수 있습니다.', 'Should alert on non-image file');
+  assert.strictEqual(mockFileInput.value, '', 'Should reset file input value');
+
+  // Test 3: Trigger file change with a valid image file, verify file reader error handling
+  alertMessage = '';
+  mockFileInput.value = 'image.png';
+  fileChangeCallback({
+    target: {
+      files: [{
+        name: 'image.png',
+        type: 'image/png',
+        size: 50000
+      }]
+    }
+  });
+  // Simulate FileReader error
+  assert.ok(fileReaderInstance, 'FileReader instance should be created');
+  assert.ok(typeof fileReaderInstance.onerror === 'function', 'FileReader.onerror should be a function');
+  fileReaderInstance.onerror();
+  assert.strictEqual(alertMessage, '이미지 파일을 읽는 동안 에러가 발생했습니다.', 'Should alert on file read error');
+  assert.strictEqual(mockFileInput.value, '', 'Should reset file input value on error');
+
+  // Test 4: Trigger file change with a valid image, mock success, verify secure DOM manipulation preview
+  alertMessage = '';
+  mockFileInput.value = 'image.png';
+  fileChangeCallback({
+    target: {
+      files: [{
+        name: 'image.png',
+        type: 'image/png',
+        size: 50000
+      }]
+    }
+  });
+  
+  // Clear previewChildren to check new append
+  previewChildren.length = 0;
+  mockPreviewDiv.innerHTML = 'some-dummy';
+  
+  fileReaderInstance.onload({
+    target: {
+      result: 'data:image/png;base64,abcdef'
+    }
+  });
+
+  assert.strictEqual(mockPreviewDiv.innerHTML, '', 'previewDiv should be cleared before appending');
+  assert.strictEqual(previewChildren.length, 1, 'Should append exactly 1 child to previewDiv');
+  const appendedImg = previewChildren[0];
+  assert.strictEqual(appendedImg.tagName, 'IMG', 'Appended child must be an IMG element');
+  assert.strictEqual(appendedImg.src, 'data:image/png;base64,abcdef', 'IMG src must be the loaded image data');
+  assert.strictEqual(appendedImg.alt, '업로드된 이미지', 'IMG alt must be correct');
+  assert.strictEqual(appendedImg.style.width, '100%', 'IMG width style must be 100%');
+  assert.strictEqual(appendedImg.style.height, '100%', 'IMG height style must be 100%');
+  assert.strictEqual(appendedImg.style.objectFit, 'cover', 'IMG objectFit style must be cover');
+
+  // Clean up
+  global.document = originalDocument;
+  global.window = originalWindow;
+  global.alert = originalAlert;
+  global.FileReader = originalFileReader;
+  delete global.showSquadForm;
+  delete global.squadList;
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -553,6 +719,8 @@ runTestBlock('HTML Escaping Safety Tests (runEscapeHTMLTests)', runEscapeHTMLTes
 runTestBlock('User Data Initialization Tests (runUserDataInitializationTests)', runUserDataInitializationTests);
 runTestBlock('Signup Nickname Validation Tests (runSignupNicknameValidationTests)', runSignupNicknameValidationTests);
 runTestBlock('Admin Member Management Dashboard Tests (runAdminMembersDashboardTests)', runAdminMembersDashboardTests);
+runTestBlock('Squad Form Image Preview and Validation Tests (runSquadFormImageTests)', runSquadFormImageTests);
+
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');

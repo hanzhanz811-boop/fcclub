@@ -1087,7 +1087,14 @@ function showSquadForm(playerId = null) {
 
   function updatePreview() {
     if (loadedImageData && (loadedImageData.startsWith('data:image/') || loadedImageData.startsWith('http') || loadedImageData.startsWith('/'))) {
-      previewDiv.innerHTML = `<img src="${loadedImageData}" alt="업로드된 이미지" style="width: 100%; height: 100%; object-fit: cover;">`;
+      previewDiv.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = loadedImageData;
+      img.alt = '업로드된 이미지';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      previewDiv.appendChild(img);
     } else {
       const displayNum = numberInput ? (numberInput.value || '?') : '?';
       previewDiv.innerHTML = `<span style="font-size: 24px; color: var(--color-text-muted); font-weight: 800;">${displayNum}</span>`;
@@ -1114,6 +1121,11 @@ function showSquadForm(playerId = null) {
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
+        if (!file.type.startsWith('image/')) {
+          alert('이미지 파일만 업로드할 수 있습니다.');
+          fileInput.value = '';
+          return;
+        }
         // 크기 제한 1.5MB (1,500,000 bytes)
         if (file.size > 1500000) {
           alert('1.5MB 이하의 이미지만 업로드 가능합니다.');
@@ -1125,6 +1137,10 @@ function showSquadForm(playerId = null) {
         reader.onload = (event) => {
           loadedImageData = event.target.result;
           updatePreview();
+        };
+        reader.onerror = () => {
+          alert('이미지 파일을 읽는 동안 에러가 발생했습니다.');
+          fileInput.value = '';
         };
         reader.readAsDataURL(file);
       }
