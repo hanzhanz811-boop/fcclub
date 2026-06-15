@@ -229,9 +229,20 @@ function renderSquad(positionFilter = 'ALL') {
     const card = document.createElement('div');
     card.className = 'player-card';
     card.setAttribute('data-id', player.id);
+
+    const isValidImage = player.image && (
+      player.image.startsWith('data:image/') ||
+      player.image.startsWith('http') ||
+      player.image.startsWith('/')
+    );
+
+    const imgHtml = isValidImage
+      ? `<div class="player-img-wrapper"><img src="${player.image}" alt="${escapeHTML(player.name)} 선수 프로필" class="player-img"></div>`
+      : `<div class="player-img-placeholder">${player.number}</div>`;
+
     card.innerHTML = `
       <div class="player-number-badge">${player.number}</div>
-      <div class="player-img-placeholder">${player.number}</div>
+      ${imgHtml}
       <div class="player-info">
         <div class="player-name">${escapeHTML(player.name)}</div>
         <div class="player-pos">${escapeHTML(player.position)}</div>
@@ -250,12 +261,25 @@ function openPlayerModal(playerId) {
   const modalBody = document.getElementById('modalBody');
   if (!modal || !modalBody) return;
 
+  const isValidImage = player.image && (
+    player.image.startsWith('data:image/') ||
+    player.image.startsWith('http') ||
+    player.image.startsWith('/')
+  );
+
+  const imgHtml = isValidImage
+    ? `<div class="player-modal-img-wrapper" style="width: 100px; height: 133px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-glass-border); background: rgba(0, 0, 0, 0.3); flex-shrink: 0;"><img src="${player.image}" alt="${escapeHTML(player.name)} 프로필 이미지" style="width: 100%; height: 100%; object-fit: cover;"></div>`
+    : "";
+
   modalBody.innerHTML = `
     <div class="player-modal-header">
-      <div class="player-modal-badge">${player.number}</div>
-      <div class="player-modal-meta">
-        <h3 id="playerModalTitle">${escapeHTML(player.name)}</h3>
-        <p style="color:var(--color-text-muted)">${escapeHTML(player.engName)} | ${escapeHTML(player.position)}</p>
+      ${imgHtml}
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <div class="player-modal-badge">${player.number}</div>
+        <div class="player-modal-meta">
+          <h3 id="playerModalTitle">${escapeHTML(player.name)}</h3>
+          <p style="color:var(--color-text-muted)">${escapeHTML(player.engName)} | ${escapeHTML(player.position)}</p>
+        </div>
       </div>
     </div>
     <div>
