@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateNavbar();
   bindAuthNavEvents();
   bindAdminFeatures();
+  bindAuthFeatures();
   initRouter();
   bindNextMatchWidget();
   bindNewsWidget();
@@ -521,39 +522,6 @@ function escapeHTML(str) {
 /* ----------------- ADMIN CONTROLLER FEATURES ----------------- */
 
 function bindAdminFeatures() {
-  const loginForm = document.getElementById('adminLoginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const usernameInput = document.getElementById('adminUsername');
-      const passwordInput = document.getElementById('adminPassword');
-      const errorMsg = document.getElementById('adminLoginError');
-
-      const username = usernameInput ? usernameInput.value.trim() : '';
-      const password = passwordInput ? passwordInput.value : '';
-
-      if (username === 'admin' && password === 'admin1234') {
-        isAdminLoggedIn = true;
-        sessionStorage.setItem('isAdminLoggedIn', 'true');
-        if (errorMsg) errorMsg.textContent = '';
-        if (usernameInput) usernameInput.value = '';
-        if (passwordInput) passwordInput.value = '';
-        window.location.hash = 'admin-dashboard';
-      } else {
-        if (errorMsg) errorMsg.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
-      }
-    });
-  }
-
-  const logoutBtn = document.getElementById('btnAdminLogout');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      isAdminLoggedIn = false;
-      sessionStorage.removeItem('isAdminLoggedIn');
-      window.location.hash = 'home';
-    });
-  }
-
   const adminTabBtns = document.querySelectorAll('.admin-nav-btn[data-admin-tab]');
   adminTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -561,6 +529,123 @@ function bindAdminFeatures() {
       renderAdminDashboard();
     });
   });
+}
+
+function bindAuthFeatures() {
+  const loginForm = document.getElementById('memberLoginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const emailInput = document.getElementById('loginEmail');
+      const pwInput = document.getElementById('loginPassword');
+      const email = emailInput ? emailInput.value.trim() : '';
+      const password = pwInput ? pwInput.value : '';
+      const errorEl = document.getElementById('loginErrorMsg');
+
+      const user = usersList.find(u => u.email === email && u.password === password);
+      if (user) {
+        currentUser = {
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+          role: user.role,
+          createdAt: user.createdAt
+        };
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+        }
+        updateNavbar();
+
+        if (errorEl) errorEl.textContent = '';
+        alert(`${user.nickname}님, 환영합니다!`);
+
+        if (user.role === 'admin') {
+          window.location.hash = 'admin-dashboard';
+        } else {
+          window.location.hash = 'home';
+        }
+      } else {
+        if (errorEl) {
+          errorEl.textContent = '이메일 주소 또는 비밀번호가 올바르지 않습니다.';
+        }
+      }
+    });
+  }
+
+  const signupForm = document.getElementById('memberSignupForm');
+  if (signupForm) {
+    signupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const emailInput = document.getElementById('signupEmail');
+      const nicknameInput = document.getElementById('signupNickname');
+      const pwInput = document.getElementById('signupPassword');
+      const pwConfirmInput = document.getElementById('signupPasswordConfirm');
+      const errorEl = document.getElementById('signupErrorMsg');
+
+      const email = emailInput ? emailInput.value.trim() : '';
+      const nickname = nicknameInput ? nicknameInput.value.trim() : '';
+      const password = pwInput ? pwInput.value : '';
+      const passwordConfirm = pwConfirmInput ? pwConfirmInput.value : '';
+
+      // Validate email format with regex /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        if (errorEl) errorEl.textContent = '올바른 이메일 형식이 아닙니다.';
+        return;
+      }
+
+      // Validate password length is >= 4
+      if (password.length < 4) {
+        if (errorEl) errorEl.textContent = '비밀번호는 최소 4자 이상이어야 합니다.';
+        return;
+      }
+
+      // Validate password === passwordConfirm
+      if (password !== passwordConfirm) {
+        if (errorEl) errorEl.textContent = '비밀번호와 비밀번호 확인이 일치하지 않습니다.';
+        return;
+      }
+
+      // Validate email uniqueness: check if email already exists in usersList
+      const emailExists = usersList.some(u => u.email === email);
+      if (emailExists) {
+        if (errorEl) errorEl.textContent = '이미 사용 중인 이메일 주소입니다.';
+        return;
+      }
+
+      // Validate nickname uniqueness: check if nickname already exists in usersList
+      const nicknameExists = usersList.some(u => u.nickname === nickname);
+      if (nicknameExists) {
+        if (errorEl) errorEl.textContent = '이미 사용 중인 닉네임입니다.';
+        return;
+      }
+
+      // If all validations pass, add a new user object to usersList
+      const maxId = usersList.reduce((max, u) => u.id > max ? u.id : max, 0);
+      const newId = maxId + 1;
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const createdAt = `${year}-${month}-${day}`;
+
+      const newUser = {
+        id: newId,
+        email: email,
+        password: password,
+        nickname: nickname,
+        role: 'user',
+        createdAt: createdAt
+      };
+
+      usersList.push(newUser);
+      localStorage.setItem('userData', JSON.stringify(usersList));
+
+      if (errorEl) errorEl.textContent = '';
+      alert('회원가입이 정상 완료되었습니다. 로그인해 주세요!');
+      window.location.hash = 'login';
+    });
+  }
 }
 
 function renderAdminLogin() {
