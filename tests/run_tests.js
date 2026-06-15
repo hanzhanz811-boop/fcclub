@@ -127,6 +127,9 @@ function runRouterTests() {
   assert.ok(appJsCode.includes('renderNewsPage'), 'app.js should contain renderNewsPage');
   assert.ok(appJsCode.includes('renderAdminLogin'), 'app.js should contain renderAdminLogin');
   assert.ok(!appJsCode.includes('openNewsModal'), 'app.js should not contain openNewsModal');
+  assert.ok(appJsCode.includes('renderLoginTab'), 'app.js should contain renderLoginTab');
+  assert.ok(appJsCode.includes('renderSignupTab'), 'app.js should contain renderSignupTab');
+  assert.ok(appJsCode.includes('currentUser'), 'app.js should use currentUser session state');
 }
 
 function runCommunityTests() {
@@ -139,7 +142,8 @@ function runCommunityTests() {
   assert.ok(initialPosts.length > 0, 'Should load default posts if store is empty');
   
   // 2. 글 작성 테스트
-  const newPost = manager.createPost('테스트 제목', '작성자A', '본문 내용', 'pw123');
+  const userA = { nickname: '작성자A', email: 'userA@example.com' };
+  const newPost = manager.createPost('테스트 제목', '본문 내용', userA);
   assert.strictEqual(newPost.title, '테스트 제목');
   assert.strictEqual(newPost.author, '작성자A');
   assert.strictEqual(newPost.likes, 0);
@@ -166,7 +170,8 @@ function runCommunityTests() {
   assert.strictEqual(updatedFound.likes, likesBefore + 1, 'Likes count should increase by 1');
   
   // 4. 댓글 작성 테스트
-  const comment = manager.addComment(newPost.id, '댓글러', '댓글내용', 'cpw123');
+  const commenter = { nickname: '댓글러', email: 'commenter@example.com' };
+  const comment = manager.addComment(newPost.id, '댓글내용', commenter);
   assert.strictEqual(comment.author, '댓글러');
   assert.strictEqual(comment.content, '댓글내용');
   assert.strictEqual(typeof comment.id, 'number', 'Comment ID must be a number');
@@ -179,34 +184,48 @@ function runCommunityTests() {
   
   // 4b. 예외 케이스 / 오류 처리 검증 테스트
   assert.strictEqual(manager.likePost(999999), false, 'likePost on invalid ID should return false');
-  assert.strictEqual(manager.addComment(999999, 'author', 'content', 'pw'), null, 'addComment on invalid ID should return null');
-  assert.strictEqual(manager.deletePost(999999, 'pw'), false, 'deletePost on invalid ID should return false');
-  assert.strictEqual(manager.deleteComment(newPost.id, 999999, 'pw'), false, 'deleteComment on invalid comment ID should return false');
-  assert.strictEqual(manager.deleteComment(999999, comment.id, 'pw'), false, 'deleteComment on invalid post ID should return false');
+  assert.strictEqual(manager.addComment(999999, '본문 내용', commenter), null, 'addComment on invalid ID should return null');
+  assert.strictEqual(manager.deletePost(999999, userA), false, 'deletePost on invalid ID should return false');
+  assert.strictEqual(manager.deleteComment(newPost.id, 999999, commenter), false, 'deleteComment on invalid comment ID should return false');
+  assert.strictEqual(manager.deleteComment(999999, comment.id, commenter), false, 'deleteComment on invalid post ID should return false');
   
-  // 5. 잘못된 비밀번호로 댓글 삭제 거부 테스트
-  const isDeletedCommentFail = manager.deleteComment(newPost.id, comment.id, 'wrong_pw');
-  assert.strictEqual(isDeletedCommentFail, false, 'Should fail to delete comment with wrong password');
+  // 5. 잘못된 사용자로 댓글 삭제 거부 테스트
+  const wrongUser = { nickname: '다른사람', email: 'wrong@example.com', role: 'user', password: 'wrong' };
+  const isDeletedCommentFail = manager.deleteComment(newPost.id, comment.id, wrongUser);
+  assert.strictEqual(isDeletedCommentFail, false, 'Should fail to delete comment with wrong user');
   
-  // 6. 올바른 비밀번호로 댓글 삭제 테스트
-  const isDeletedCommentSuccess = manager.deleteComment(newPost.id, comment.id, 'cpw123');
-  assert.strictEqual(isDeletedCommentSuccess, true, 'Should succeed to delete comment with correct password');
+  // 6. 올바른 사용자로 댓글 삭제 테스트
+  const isDeletedCommentSuccess = manager.deleteComment(newPost.id, comment.id, commenter);
+  assert.strictEqual(isDeletedCommentSuccess, true, 'Should succeed to delete comment with correct user');
   
   const postsAfterCommentDelete = manager.loadPosts();
   const postAfterCommentDelete = postsAfterCommentDelete.find(p => p.id === newPost.id);
   assert.strictEqual(postAfterCommentDelete.comments.length, 0, 'Comment list should be empty after deletion');
   
-  // 7. 잘못된 비밀번호로 게시글 삭제 거부 테스트
-  const isDeletedFail = manager.deletePost(newPost.id, 'wrong_password');
-  assert.strictEqual(isDeletedFail, false, 'Should fail to delete post with wrong password');
+  // 7. 잘못된 사용자로 게시글 삭제 거부 테스트
+  const isDeletedFail = manager.deletePost(newPost.id, wrongUser);
+  assert.strictEqual(isDeletedFail, false, 'Should fail to delete post with wrong user');
   
-  // 8. 올바른 비밀번호로 게시글 삭제 테스트
-  const isDeletedSuccess = manager.deletePost(newPost.id, 'pw123');
-  assert.strictEqual(isDeletedSuccess, true, 'Should succeed to delete post with correct password');
+  // 8. 올바른 사용자로 게시글 삭제 테스트
+  const isDeletedSuccess = manager.deletePost(newPost.id, userA);
+  assert.strictEqual(isDeletedSuccess, true, 'Should succeed to delete post with correct user');
   
   const finalPosts = manager.loadPosts();
   const finalFound = finalPosts.find(p => p.id === newPost.id);
   assert.strictEqual(finalFound, undefined, 'Post must be removed after deletion');
+
+  // 9. 레거시 글/댓글 삭제 테스트 추가
+  // 레거시 웰컴 포스트 ID: 1718246400000, 웰컴 댓글 ID: 1718246450000
+  const legacyUserWrong = { role: 'user', password: 'wrong' };
+  const legacyUserCorrect = { role: 'user', password: '1234' };
+  
+  // 레거시 댓글 삭제 거부/수행 테스트
+  assert.strictEqual(manager.deleteComment(1718246400000, 1718246450000, legacyUserWrong), false, 'Should fail to delete legacy comment with wrong password');
+  assert.strictEqual(manager.deleteComment(1718246400000, 1718246450000, legacyUserCorrect), true, 'Should succeed to delete legacy comment with correct password');
+
+  // 레거시 게시글 삭제 거부/수행 테스트
+  assert.strictEqual(manager.deletePost(1718246400000, legacyUserWrong), false, 'Should fail to delete legacy post with wrong password');
+  assert.strictEqual(manager.deletePost(1718246400000, legacyUserCorrect), true, 'Should succeed to delete legacy post with correct password');
 }
 
 function runNewsTests() {

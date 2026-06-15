@@ -58,19 +58,16 @@ class CommunityManager {
     }
   }
 
-  createPost(title, author, content, password) {
+  createPost(title, content, user) {
     const posts = this.loadPosts();
     const now = new Date();
-    
-    // Ensure password is not empty to prevent delete bypassing
-    const postPassword = password ? String(password) : '';
     
     const newPost = {
       id: this._generateId(),
       title: title || '제목 없음',
-      author: author || '익명',
       content: content || '',
-      password: postPassword,
+      author: user ? (user.nickname || '익명') : '익명',
+      authorEmail: user ? (user.email || '') : '',
       likes: 0,
       createdAt: this._formatDate(now),
       comments: []
@@ -80,15 +77,28 @@ class CommunityManager {
     return newPost;
   }
 
-  deletePost(postId, inputPassword) {
-    if (!inputPassword) return false; // Reject empty/falsy passwords
+  deletePost(postId, user) {
+    if (!user) return false;
     const posts = this.loadPosts();
     const index = posts.findIndex(p => p.id === Number(postId));
     if (index === -1) return false;
-    if (posts[index].password !== inputPassword) return false;
-    posts.splice(index, 1);
-    this.savePosts(posts);
-    return true;
+    
+    const post = posts[index];
+    if (!post.authorEmail) {
+      if (user.role === 'admin' || user.password === '1234') {
+        posts.splice(index, 1);
+        this.savePosts(posts);
+        return true;
+      }
+      return false;
+    }
+    
+    if (user.role === 'admin' || user.email === post.authorEmail) {
+      posts.splice(index, 1);
+      this.savePosts(posts);
+      return true;
+    }
+    return false;
   }
 
   likePost(postId) {
@@ -100,19 +110,18 @@ class CommunityManager {
     return true;
   }
 
-  addComment(postId, author, content, password) {
+  addComment(postId, content, user) {
     const posts = this.loadPosts();
     const index = posts.findIndex(p => p.id === Number(postId));
     if (index === -1) return null;
     
     const now = new Date();
-    const commentPassword = password ? String(password) : '';
     
     const newComment = {
       id: this._generateId(),
-      author: author || '익명댓글러',
+      author: user ? (user.nickname || '익명댓글러') : '익명댓글러',
+      authorEmail: user ? (user.email || '') : '',
       content: content || '',
-      password: commentPassword,
       createdAt: this._formatDate(now)
     };
     
@@ -122,8 +131,8 @@ class CommunityManager {
     return newComment;
   }
 
-  deleteComment(postId, commentId, inputPassword) {
-    if (!inputPassword) return false; // Reject empty/falsy passwords
+  deleteComment(postId, commentId, user) {
+    if (!user) return false;
     const posts = this.loadPosts();
     const postIndex = posts.findIndex(p => p.id === Number(postId));
     if (postIndex === -1) return false;
@@ -132,11 +141,22 @@ class CommunityManager {
     const commentIndex = comments.findIndex(c => c.id === Number(commentId));
     if (commentIndex === -1) return false;
     
-    if (comments[commentIndex].password !== inputPassword) return false;
+    const comment = comments[commentIndex];
+    if (!comment.authorEmail) {
+      if (user.role === 'admin' || user.password === '1234') {
+        comments.splice(commentIndex, 1);
+        this.savePosts(posts);
+        return true;
+      }
+      return false;
+    }
     
-    comments.splice(commentIndex, 1);
-    this.savePosts(posts);
-    return true;
+    if (user.role === 'admin' || user.email === comment.authorEmail) {
+      comments.splice(commentIndex, 1);
+      this.savePosts(posts);
+      return true;
+    }
+    return false;
   }
 }
 
@@ -166,7 +186,17 @@ const manager = new CommunityManager();
 function initCommunity() {
   const btnOpenWrite = document.getElementById('btnOpenWrite');
   if (btnOpenWrite) {
-    btnOpenWrite.addEventListener('click', renderWriteForm);
+    btnOpenWrite.addEventListener('click', () => {
+      const loggedInUser = (typeof currentUser !== 'undefined') ? currentUser : null;
+      if (loggedInUser === null) {
+        alert('로그인이 필요한 서비스입니다.');
+        if (typeof window !== 'undefined') {
+          window.location.hash = 'login';
+        }
+        return;
+      }
+      renderWriteForm();
+    });
   }
   renderPostList();
 }
@@ -217,16 +247,14 @@ function renderWriteForm() {
   const detailColumn = document.getElementById('boardDetailColumn');
   if (!detailColumn) return;
 
+  const loggedInUser = (typeof currentUser !== 'undefined') ? currentUser : null;
+
   detailColumn.innerHTML = `
     <h3 class="post-detail-title-h3">새 글 작성</h3>
     <form id="writePostForm">
       <div class="fanzone-form-group">
-        <label for="postAuthor">작성자</label>
-        <input type="text" id="postAuthor" class="fanzone-input" placeholder="이름을 입력하세요" required maxLength="10">
-      </div>
-      <div class="fanzone-form-group">
-        <label for="postPassword">비밀번호 (삭제 시 필요)</label>
-        <input type="password" id="postPassword" class="fanzone-input" placeholder="비밀번호를 입력하세요" required maxLength="15">
+        <label>작성자</label>
+        <input type="text" class="fanzone-input" value="${escapeHTML(loggedInUser ? loggedInUser.nickname : '')} (${escapeHTML(loggedInUser ? loggedInUser.email : '')})" disabled style="background: rgba(255,255,255,0.05); color: var(--color-text-muted);">
       </div>
       <div class="fanzone-form-group">
         <label for="postTitle">제목</label>
@@ -252,12 +280,11 @@ function renderWriteForm() {
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const author = detailColumn.querySelector('#postAuthor').value;
-      const pass = detailColumn.querySelector('#postPassword').value;
       const title = detailColumn.querySelector('#postTitle').value;
       const content = detailColumn.querySelector('#postContent').value;
+      const currentUserObj = (typeof currentUser !== 'undefined') ? currentUser : null;
 
-      const newPost = manager.createPost(title, author, content, pass);
+      const newPost = manager.createPost(title, content, currentUserObj);
       activePostId = newPost.id;
       renderPostList();
       renderPostDetail(newPost.id);
@@ -279,6 +306,9 @@ function renderPostDetail(postId) {
     return;
   }
 
+  const loggedInUser = (typeof currentUser !== 'undefined') ? currentUser : null;
+  const showDeleteBtn = loggedInUser !== null && (loggedInUser.email === post.authorEmail || loggedInUser.role === 'admin');
+
   detailColumn.innerHTML = `
     <div class="post-detail-header">
       <h3 class="post-detail-title">${escapeHTML(post.title)}</h3>
@@ -291,7 +321,7 @@ function renderPostDetail(postId) {
     
     <div class="post-actions">
       <button id="btnLikePost" class="btn btn-gold">👍 추천 <span id="likeCount">${post.likes}</span></button>
-      <button id="btnDeletePost" class="btn btn-danger">삭제</button>
+      ${showDeleteBtn ? '<button id="btnDeletePost" class="btn btn-danger">삭제</button>' : ''}
     </div>
 
     <div class="comments-section">
@@ -300,12 +330,16 @@ function renderPostDetail(postId) {
         <!-- 댓글 목록 동적 주입 -->
       </div>
       
+      ${loggedInUser !== null ? `
       <form id="commentForm" class="comment-form">
-        <input type="text" id="commentAuthor" class="fanzone-input" placeholder="작성자" aria-label="댓글 작성자 이름" required maxLength="10">
-        <input type="password" id="commentPassword" class="fanzone-input" placeholder="비밀번호" aria-label="댓글 비밀번호" required maxLength="15">
         <textarea id="commentText" class="fanzone-textarea" placeholder="댓글을 남겨보세요" aria-label="댓글 내용" required></textarea>
         <button type="submit" class="btn btn-gold btn-submit">댓글 등록</button>
       </form>
+      ` : `
+      <div class="comment-login-msg" style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 6px; color: var(--color-text-muted);">
+        댓글은 로그인한 회원만 작성할 수 있습니다.
+      </div>
+      `}
     </div>
   `;
 
@@ -325,17 +359,16 @@ function renderPostDetail(postId) {
   const deleteBtn = detailColumn.querySelector('#btnDeletePost');
   if (deleteBtn) {
     deleteBtn.addEventListener('click', () => {
-      const pass = prompt('삭제용 비밀번호를 입력해 주세요:');
-      if (pass === null) return;
-      
-      const success = manager.deletePost(postId, pass);
-      if (success) {
-        activePostId = null;
-        alert('게시글이 삭제되었습니다.');
-        renderPostList();
-        resetDetailPlaceholder();
-      } else {
-        alert('비밀번호가 일치하지 않습니다.');
+      if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+        const success = manager.deletePost(postId, loggedInUser);
+        if (success) {
+          activePostId = null;
+          alert('게시글이 삭제되었습니다.');
+          renderPostList();
+          resetDetailPlaceholder();
+        } else {
+          alert('삭제 권한이 없습니다.');
+        }
       }
     });
   }
@@ -348,11 +381,9 @@ function renderPostDetail(postId) {
   if (commentForm) {
     commentForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const author = detailColumn.querySelector('#commentAuthor').value;
-      const pass = detailColumn.querySelector('#commentPassword').value;
       const text = detailColumn.querySelector('#commentText').value;
 
-      manager.addComment(postId, author, text, pass);
+      manager.addComment(postId, text, loggedInUser);
       renderPostDetail(postId);
       renderPostList();
     });
@@ -372,13 +403,16 @@ function renderComments(comments, postId) {
     return;
   }
 
+  const loggedInUser = (typeof currentUser !== 'undefined') ? currentUser : null;
+
   comments.forEach(comment => {
+    const showCommentDelete = loggedInUser !== null && (loggedInUser.email === comment.authorEmail || loggedInUser.role === 'admin');
     const item = document.createElement('div');
     item.className = 'comment-item';
     item.innerHTML = `
       <div class="comment-meta">
         <span>💬 <strong>${escapeHTML(comment.author)}</strong> (${comment.createdAt})</span>
-        <button class="comment-delete-btn" data-id="${comment.id}">삭제</button>
+        ${showCommentDelete ? `<button class="comment-delete-btn" data-id="${comment.id}">삭제</button>` : ''}
       </div>
       <div class="comment-text">${escapeHTML(comment.content)}</div>
     `;
@@ -386,16 +420,15 @@ function renderComments(comments, postId) {
     const deleteCommentBtn = item.querySelector('.comment-delete-btn');
     if (deleteCommentBtn) {
       deleteCommentBtn.addEventListener('click', () => {
-        const pass = prompt('댓글 삭제 비밀번호를 입력해 주세요:');
-        if (pass === null) return;
-        
-        const success = manager.deleteComment(postId, comment.id, pass);
-        if (success) {
-          alert('댓글이 삭제되었습니다.');
-          renderPostDetail(postId);
-          renderPostList();
-        } else {
-          alert('비밀번호가 일치하지 않습니다.');
+        if (confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+          const success = manager.deleteComment(postId, comment.id, loggedInUser);
+          if (success) {
+            alert('댓글이 삭제되었습니다.');
+            renderPostDetail(postId);
+            renderPostList();
+          } else {
+            alert('삭제 권한이 없습니다.');
+          }
         }
       });
     }

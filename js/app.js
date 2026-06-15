@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindNewsWidget();
   initSquadFeatures();
   bindMatchCenter();
+  // Fan Zone (Community) with User Authentication Integration
   if (typeof initCommunity === 'function') {
     initCommunity();
   }
