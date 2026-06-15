@@ -193,27 +193,6 @@
       </div>
     </section>
 
-    <!-- Admin Login Tab -->
-    <section id="admin-login" class="tab-section" aria-labelledby="admin-login-heading">
-      <div class="container admin-login-container">
-        <div class="card admin-login-card">
-          <h2 id="admin-login-heading">ADMIN LOGIN</h2>
-          <form id="adminLoginForm">
-            <div class="admin-form-group">
-              <label for="adminUsername">아이디</label>
-              <input type="text" id="adminUsername" required placeholder="Username">
-            </div>
-            <div class="admin-form-group">
-              <label for="adminPassword">비밀번호</label>
-              <input type="password" id="adminPassword" required placeholder="Password">
-            </div>
-            <div class="admin-error-msg" id="adminLoginError" aria-live="assertive"></div>
-            <button type="submit" class="btn btn-gold w-100">로그인</button>
-          </form>
-        </div>
-      </div>
-    </section>
-
     <!-- Admin Dashboard Tab -->
     <section id="admin-dashboard" class="tab-section" aria-labelledby="admin-dashboard-heading">
       <div class="container admin-dashboard-container">
@@ -236,6 +215,64 @@
           <div id="adminWorkContent" class="admin-work-column" role="tabpanel" tabindex="0" aria-labelledby="admin-tab-news">
             <!-- JS 동적 렌더링 -->
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Login Tab -->
+    <section id="login" class="tab-section" aria-labelledby="login-heading">
+      <div class="container admin-login-container">
+        <div class="card admin-login-card">
+          <h2 id="login-heading">MEMBER LOGIN</h2>
+          <form id="memberLoginForm">
+            <div class="admin-form-group">
+              <label for="loginEmail">이메일 주소</label>
+              <input type="email" id="loginEmail" required placeholder="example@sungmanfc.com">
+            </div>
+            <div class="admin-form-group">
+              <label for="loginPassword">비밀번호</label>
+              <input type="password" id="loginPassword" required placeholder="비밀번호를 입력하세요">
+            </div>
+            <div class="admin-error-msg" id="loginErrorMsg" aria-live="assertive"></div>
+            <button type="submit" class="btn btn-gold w-100">로그인</button>
+            <div style="text-align: center; margin-top: 15px; font-size: 13px;">
+              <span style="color: var(--color-text-muted);">아직 회원이 아니신가요? </span>
+              <a href="#signup" style="color: var(--color-gold-solid); text-decoration: none; font-weight: 500;">회원가입</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signup Tab -->
+    <section id="signup" class="tab-section" aria-labelledby="signup-heading">
+      <div class="container admin-login-container" style="padding: 40px 0;">
+        <div class="card admin-login-card">
+          <h2 id="signup-heading">MEMBER SIGNUP</h2>
+          <form id="memberSignupForm">
+            <div class="admin-form-group">
+              <label for="signupEmail">이메일 주소</label>
+              <input type="email" id="signupEmail" required placeholder="example@sungmanfc.com">
+            </div>
+            <div class="admin-form-group">
+              <label for="signupNickname">닉네임</label>
+              <input type="text" id="signupNickname" required placeholder="게시판에 노출될 이름">
+            </div>
+            <div class="admin-form-group">
+              <label for="signupPassword">비밀번호</label>
+              <input type="password" id="signupPassword" required placeholder="비밀번호를 입력하세요">
+            </div>
+            <div class="admin-form-group">
+              <label for="signupPasswordConfirm">비밀번호 확인</label>
+              <input type="password" id="signupPasswordConfirm" required placeholder="비밀번호를 한 번 더 입력하세요">
+            </div>
+            <div class="admin-error-msg" id="signupErrorMsg" aria-live="assertive"></div>
+            <button type="submit" class="btn btn-gold w-100">회원가입</button>
+            <div style="text-align: center; margin-top: 15px; font-size: 13px;">
+              <span style="color: var(--color-text-muted);">이미 회원이신가요? </span>
+              <a href="#login" style="color: var(--color-gold-solid); text-decoration: none; font-weight: 500;">로그인</a>
+            </div>
+          </form>
         </div>
       </div>
     </section>
@@ -296,7 +333,7 @@
 
   <footer>
     <div class="container">
-      <p>&copy; 2026 SUNGMAN FC. All Rights Reserved. | <a href="#admin-login" class="admin-link" aria-label="관리자 로그인 페이지로 이동">Admin</a></p>
+      <p>&copy; 2026 SUNGMAN FC. All Rights Reserved. | <a href="#login" class="admin-link" aria-label="로그인 페이지로 이동">Admin</a></p>
     </div>
   </footer>
 
