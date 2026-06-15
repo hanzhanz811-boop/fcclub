@@ -98,3 +98,90 @@ footer {
   font-size: 14px;
   color: var(--color-text-muted);
 }
+
+/* css/main.css 추가사항 */
+.mobile-nav-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* 기존 데스크톱 네비게이션 숨김 */
+  header nav {
+    display: none;
+  }
+
+  /* 상단 헤더 컨테이너 조절 */
+  .header-container {
+    justify-content: center; /* 모바일에서는 로고 중앙 정렬 */
+    height: 60px;
+  }
+  main {
+    margin-top: 60px;
+    padding-bottom: 70px; /* 하단 탭바에 가려지지 않게 여백 추가 */
+  }
+
+  /* 하단 고정 탭바 스타일링 */
+  .mobile-nav-bar {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: calc(65px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background-color: var(--color-glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid var(--color-glass-border);
+    z-index: 1010; /* 모달(2000)보다 낮고 헤더(1000)보다 높은 인덱스 */
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .mobile-nav-bar ul {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .mobile-nav-bar li {
+    flex: 1;
+    text-align: center;
+  }
+
+  .mobile-nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    gap: 4px;
+    height: 100%;
+    transition: var(--transition-smooth);
+  }
+
+  .mobile-nav-link svg {
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @media (hover: hover) {
+    .mobile-nav-link:hover {
+      color: var(--color-text-primary);
+    }
+  }
+
+  .mobile-nav-link.active {
+    color: var(--color-gold-solid);
+  }
+
+  .mobile-nav-link.active svg {
+    fill: var(--color-gold-solid);
+    transform: scale(1.15); /* 탭 클릭 시 마이크로 바운스 효과 */
+  }
+}
