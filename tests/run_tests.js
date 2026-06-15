@@ -757,57 +757,59 @@ function runPlayerImageIntegrationTests() {
     addEventListener: () => {}
   };
 
-  const appJsPath = path.join(__dirname, '../js/app.js');
-  const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
-    Object.defineProperty(global, "squadList", {
-      get: () => squadList,
-      set: (val) => { squadList = val; },
-      configurable: true
-    });
-    global.renderSquad = renderSquad;
-  `;
-  eval(appJsCode);
+  try {
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      Object.defineProperty(global, "squadList", {
+        get: () => squadList,
+        set: (val) => { squadList = val; },
+        configurable: true
+      });
+      global.renderSquad = renderSquad;
+    `;
+    eval(appJsCode);
 
-  // Setup mock squadList
-  global.squadList = [
-    {
-      id: 10,
-      name: '홍길동',
-      engName: 'Hong Gildong',
-      number: 10,
-      position: 'FW',
-      image: 'player_fw_10',
-      stats: { matches: 0, goals: 0, assists: 0 },
-      details: { height: 180, weight: 75, birth: '1995-01-01' }
-    },
-    {
-      id: 20,
-      name: '이순신',
-      engName: 'Yi Sunsin',
-      number: 20,
-      position: 'DF',
-      image: 'data:image/png;base64,abcdef',
-      stats: { matches: 0, goals: 0, assists: 0 },
-      details: { height: 185, weight: 80, birth: '1990-01-01' }
-    }
-  ];
+    // Setup mock squadList
+    global.squadList = [
+      {
+        id: 10,
+        name: '홍길동',
+        engName: 'Hong Gildong',
+        number: 10,
+        position: 'FW',
+        image: 'player_fw_10',
+        stats: { matches: 0, goals: 0, assists: 0 },
+        details: { height: 180, weight: 75, birth: '1995-01-01' }
+      },
+      {
+        id: 20,
+        name: '이순신',
+        engName: 'Yi Sunsin',
+        number: 20,
+        position: 'DF',
+        image: 'data:image/png;base64,abcdef',
+        stats: { matches: 0, goals: 0, assists: 0 },
+        details: { height: 185, weight: 80, birth: '1990-01-01' }
+      }
+    ];
 
-  // Run the renderSquad function
-  global.renderSquad('ALL');
+    // Run the renderSquad function
+    global.renderSquad('ALL');
 
-  // Verify Case A: Legacy image key 'player_fw_10' yields a placeholder
-  assert.ok(squadGridHTML.includes('player-img-placeholder'), 'Legacy image should yield player-img-placeholder class');
-  assert.ok(!squadGridHTML.includes('src="player_fw_10"'), 'Legacy image should not render as a source attribute');
+    // Verify Case A: Legacy image key 'player_fw_10' yields a placeholder
+    assert.ok(squadGridHTML.includes('player-img-placeholder'), 'Legacy image should yield player-img-placeholder class');
+    assert.ok(!squadGridHTML.includes('src="player_fw_10"'), 'Legacy image should not render as a source attribute');
 
-  // Verify Case B: Base64 image renders in an img tag
-  assert.ok(squadGridHTML.includes('src="data:image/png;base64,abcdef"'), 'Base64 image should render inside img src attribute');
-  assert.ok(squadGridHTML.includes('class="player-img"'), 'Base64 image should render with player-img class');
-
-  // Restore mocks
-  global.document = originalDocument;
-  global.window = originalWindow;
-  delete global.squadList;
-  delete global.renderSquad;
+    // Verify Case B: Base64 image renders in an img tag
+    assert.ok(squadGridHTML.includes('src="data:image/png;base64,abcdef"'), 'Base64 image should render inside img src attribute');
+    assert.ok(squadGridHTML.includes('class="player-img"'), 'Base64 image should render with player-img class');
+  } finally {
+    // Restore mocks
+    global.document = originalDocument;
+    global.window = originalWindow;
+    delete global.squadList;
+    delete global.renderSquad;
+  }
 }
 
 // Run the test blocks
