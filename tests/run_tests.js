@@ -322,6 +322,10 @@ function runUserDataInitializationTests() {
   assert.strictEqual(global.usersList.length, 1, 'Should load existing userData instead of overriding');
   assert.strictEqual(global.usersList[0].email, 'custom@example.com');
   
+  localStorage.setItem('userData', 'corrupted-json-{[');
+  global.initLocalStorageData();
+  assert.deepStrictEqual(global.usersList, [], 'Should fallback to empty array on corrupted JSON');
+  
   global.document = originalDocument;
   global.window = originalWindow;
   global.sessionStorage = originalSessionStorage;
@@ -336,6 +340,16 @@ function runUserDataInitializationTests() {
   delete global.initLocalStorageData;
   delete global.initRouter;
   delete global.switchTab;
+
+  delete global.newsData;
+  delete global.squadData;
+  delete global.matchData;
+  delete global.bindAdminFeatures;
+  delete global.bindNextMatchWidget;
+  delete global.bindNewsWidget;
+  delete global.initSquadFeatures;
+  delete global.bindMatchCenter;
+  delete global.initCommunity;
 }
 
 // Run the test blocks

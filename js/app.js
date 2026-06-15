@@ -55,10 +55,18 @@ function initLocalStorageData() {
     localStorage.setItem('userData', JSON.stringify(initialUsers));
   }
 
-  newsList = JSON.parse(localStorage.getItem('newsData')) || [];
-  squadList = JSON.parse(localStorage.getItem('squadData')) || [];
-  matchList = JSON.parse(localStorage.getItem('matchData')) || [];
-  usersList = JSON.parse(localStorage.getItem('userData')) || [];
+  newsList = safeJsonParse(localStorage.getItem('newsData')) || [];
+  squadList = safeJsonParse(localStorage.getItem('squadData')) || [];
+  matchList = safeJsonParse(localStorage.getItem('matchData')) || [];
+  usersList = safeJsonParse(localStorage.getItem('userData')) || [];
+}
+
+function safeJsonParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
 }
 
 function initRouter() {
