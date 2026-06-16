@@ -18,7 +18,7 @@
 **Files:**
 - Modify: `css/components.css`
 
-- [ ] **Step 1: 슬라이더 배경 및 팝업 모달 스타일 시트 작성**
+- [x] **Step 1: 슬라이더 배경 및 팝업 모달 스타일 시트 작성**
   `css/components.css` 파일의 하단에 아래 CSS 규칙들을 추가합니다.
   ```css
   /* 메인 배경 슬라이더 관련 스타일 */
@@ -171,7 +171,7 @@
   }
   ```
 
-- [ ] **Step 2: CSS 추가 Git 커밋**
+- [x] **Step 2: CSS 추가 Git 커밋**
   Run: `git add css/components.css`
   Run: `git commit -m "style: add styles for background slider and notice popup modal"`
 
@@ -182,7 +182,7 @@
 **Files:**
 - Modify: `js/app.js`
 
-- [ ] **Step 1: 메인 탭 렌더링에 슬라이더 동적 마운트 로직 적용**
+- [x] **Step 1: 메인 탭 렌더링에 슬라이더 동적 마운트 로직 적용**
   `js/app.js` 파일에서 `initRouter` 또는 홈 렌더링 부근에 슬라이더 초기화 함수를 설계합니다.
   기존 HTML의 `.hero-section` 안에 정적으로 박혀 있던 배경 이미지를 지우고 동적 레이어를 생성합니다.
   ```javascript
@@ -244,7 +244,7 @@
   ```
   * `switchTab(tabId)` 함수 시작 부분 혹은 `renderSquad` 근처 등 홈 화면이 렌더링될 때 `initMainSlider()`가 수행되도록 삽입합니다.
 
-- [ ] **Step 2: 관리자 페이지에 메인 슬라이더 등록/삭제 UI 이식**
+- [x] **Step 2: 관리자 페이지에 메인 슬라이더 등록/삭제 UI 이식**
   * `showAdminDashboard()` 내에 '메인 이미지 관리' 서브 탭을 렌더링하는 HTML을 마운트하고 폼 바인딩 리스너를 구현합니다.
   * 3장 초과 등록을 사전에 원천 차단하는 유효성 로직과 `FileReader`를 탑재합니다.
   ```javascript
@@ -397,7 +397,7 @@
   };
   ```
 
-- [ ] **Step 3: 슬라이더 기능 바인딩 및 저장 Git 커밋**
+- [x] **Step 3: 슬라이더 기능 바인딩 및 저장 Git 커밋**
   Run: `git add js/app.js`
   Run: `git commit -m "feat: implement main background image slider and admin slider manager"`
 
@@ -409,7 +409,7 @@
 - Modify: `js/app.js`
 - Modify: `index.html`
 
-- [ ] **Step 1: index.html 에 팝업 모달 골격 요소 마운트**
+- [x] **Step 1: index.html 에 팝업 모달 골격 요소 마운트**
   `index.html` 파일 내 `<body>` 하단(가장 끝 부분)에 팝업 오버레이와 컨테이너를 정적으로 주입합니다.
   ```html
   <!-- index.html 수정: body 닫는 태그 바로 위에 추가 -->
@@ -432,7 +432,7 @@
   </div>
   ```
 
-- [ ] **Step 2: 팝업 생성기 및 24시간 보지 않기 차단 기능 이식**
+- [x] **Step 2: 팝업 생성기 및 24시간 보지 않기 차단 기능 이식**
   * `js/app.js`에 유튜브 파싱 헬퍼 함수, 팝업 렌더러 함수, 닫기 이벤트 핸들러를 구성합니다.
   ```javascript
   // js/app.js 내에 추가할 유튜브 ID 파싱 및 팝업 제어 로직
@@ -537,7 +537,7 @@
   ```
   * `switchTab(tabId)` 에서 `tabId === 'home'` 일 때 `checkAndShowPopup()`을 실행하고, 어플리케이션 초기 구동 시 `initPopupEvents()`를 실행하도록 심습니다.
 
-- [ ] **Step 3: 관리자 페이지에 팝업 제어 폼 UI 연동**
+- [x] **Step 3: 관리자 페이지에 팝업 제어 폼 UI 연동**
   * `showAdminDashboard()` 탭 하단에 '팝업 환경 설정' 폼 서브 메뉴를 구축하고, 저장 이벤트를 맵핑합니다.
   ```javascript
   // js/app.js: 관리자 팝업 렌더링 함수 추가
@@ -714,7 +714,7 @@
   ```
   * `showAdminDashboard` 내에서 `adminSliderContent`와 `adminPopupContent`가 렌더링될 수 있도록 서브 레이아웃 HTML을 마운트하는 탭 메뉴 영역(예: `showAdminDashboard` 내의 탭 전환 영역)에 `renderAdminSlider()`와 `renderAdminPopup()` 실행 콜백을 연동합니다.
 
-- [ ] **Step 4: 팝업 모달 HTML 주입 및 스위치 인터랙션 Git 커밋**
+- [x] **Step 4: 팝업 모달 HTML 주입 및 스위치 인터랙션 Git 커밋**
   Run: `git add index.html js/app.js`
   Run: `git commit -m "feat: implement main notice popup modal logic and admin manager config form"`
 
@@ -725,7 +725,7 @@
 **Files:**
 - Modify: `tests/run_tests.js`
 
-- [ ] **Step 1: tests/run_tests.js 내에 슬라이더 및 팝업 통합 테스트 스위트 이식**
+- [x] **Step 1: tests/run_tests.js 내에 슬라이더 및 팝업 통합 테스트 스위트 이식**
   `tests/run_tests.js` 파일 하단에 `runMainSliderAndPopupTests()` 테스트 블록을 작성합니다.
   ```javascript
   // tests/run_tests.js: runMainSliderAndPopupTests 추가
@@ -847,11 +847,11 @@
   runTestBlock('Main Slider & Popup Integration Tests (runMainSliderAndPopupTests)', runMainSliderAndPopupTests);
   ```
 
-- [ ] **Step 2: 전체 테스트 실행 및 성공 검증**
+- [x] **Step 2: 전체 테스트 실행 및 성공 검증**
   Run: `node tests/run_tests.js`
   Expected: PASS
 
-- [ ] **Step 3: 테스트 코드 Git 최종 커밋**
+- [x] **Step 3: 테스트 코드 Git 최종 커밋**
   Run: `git add tests/run_tests.js`
   Run: `git commit -m "test: add unit and integration test blocks for slider limit and popup logic"`
 
