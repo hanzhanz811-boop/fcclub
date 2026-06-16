@@ -163,6 +163,9 @@ function switchTab(tabId) {
   window.scrollTo(0, 0);
 
   // 탭별 추가 액션
+  if (tabId === 'home') {
+    initMainSlider();
+  }
   if (tabId === 'fanzone' && typeof window.renderCommunity === 'function') {
     window.renderCommunity();
   }
@@ -548,6 +551,25 @@ function escapeHTML(str) {
 /* ----------------- ADMIN CONTROLLER FEATURES ----------------- */
 
 function bindAdminFeatures() {
+  // Add background image slider tab button dynamically if not exists
+  const tabList = document.querySelector('.admin-layout nav.admin-nav-column ul[role="tablist"]');
+  if (tabList && !document.getElementById('admin-tab-slider')) {
+    const li = document.createElement('li');
+    li.setAttribute('role', 'presentation');
+    
+    const btn = document.createElement('button');
+    btn.className = 'admin-nav-btn';
+    btn.id = 'admin-tab-slider';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', 'false');
+    btn.setAttribute('aria-controls', 'adminWorkContent');
+    btn.setAttribute('data-admin-tab', 'slider');
+    btn.textContent = '배경 이미지 관리';
+    
+    li.appendChild(btn);
+    tabList.appendChild(li);
+  }
+
   const adminTabBtns = document.querySelectorAll('.admin-nav-btn[data-admin-tab]');
   adminTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -722,6 +744,8 @@ function renderAdminDashboard() {
     renderAdminMatches();
   } else if (activeAdminTab === 'members') {
     renderAdminMembers();
+  } else if (activeAdminTab === 'slider') {
+    renderAdminSlider();
   }
 }
 
@@ -1657,5 +1681,222 @@ function renderSignupTab() {
   if (pwInput) pwInput.value = '';
   if (pwConfirmInput) pwConfirmInput.value = '';
 }
+
+/* BACKGROUND IMAGE SLIDER LOGIC */
+let sliderTimer = null;
+
+function initMainSlider() {
+  const hero = document.querySelector('.hero-section') || document.querySelector('.hero-banner');
+  if (!hero) return;
+
+  // Clear existing background image inline style and avoid showing default background if custom background is used
+  hero.style.backgroundImage = 'none';
+
+  // Remove old slider element if exists
+  const oldSlider = hero.querySelector('.hero-slider-bg');
+  if (oldSlider) {
+    oldSlider.remove();
+  }
+  if (sliderTimer) {
+    clearInterval(sliderTimer);
+    sliderTimer = null;
+  }
+
+  // Load from localStorage
+  let sliderData = [];
+  try {
+    sliderData = JSON.parse(localStorage.getItem('mainSliderData')) || [];
+  } catch (e) {
+    sliderData = [];
+  }
+
+  // Fallback if empty
+  if (sliderData.length === 0) {
+    sliderData = [{ id: 1, image: 'assets/hero-bg.jpg' }];
+  }
+
+  const sliderBg = document.createElement('div');
+  sliderBg.className = 'hero-slider-bg';
+
+  sliderData.forEach((item, idx) => {
+    const slide = document.createElement('div');
+    slide.className = `hero-slide ${idx === 0 ? 'active' : ''}`;
+    slide.style.backgroundImage = `url('${escapeHTML(item.image)}')`;
+    sliderBg.appendChild(slide);
+  });
+
+  // Inject at the very beginning of the hero section so text overlays it
+  hero.insertBefore(sliderBg, hero.firstChild);
+
+  // If 2 or more images, cycle
+  if (sliderData.length > 1) {
+    const slides = sliderBg.querySelectorAll('.hero-slide');
+    let currentIdx = 0;
+    sliderTimer = setInterval(() => {
+      slides[currentIdx].classList.remove('active');
+      currentIdx = (currentIdx + 1) % slides.length;
+      slides[currentIdx].classList.add('active');
+    }, 5000);
+  }
+}
+
+function renderAdminSlider() {
+  const parent = document.getElementById('adminWorkContent');
+  if (!parent) return;
+
+  parent.innerHTML = '<div id="adminSliderContent"></div>';
+  const container = document.getElementById('adminSliderContent');
+  if (!container) return;
+
+  let sliderData = [];
+  try {
+    sliderData = JSON.parse(localStorage.getItem('mainSliderData')) || [];
+  } catch (e) {
+    sliderData = [];
+  }
+
+  let listHtml = '';
+  sliderData.forEach(item => {
+    listHtml += `
+      <div style="display: flex; align-items: center; gap: 15px; border: 1px solid var(--color-glass-border); padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.2);">
+        <img src="${escapeHTML(item.image)}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px;">
+        <div style="flex: 1; font-size: 13px; color: var(--color-text-muted);">등록된 이미지 (ID: ${item.id})</div>
+        <button class="btn btn-outline btn-sm btn-delete-slider-image" data-id="${item.id}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);">삭제</button>
+      </div>
+    `;
+  });
+
+  if (sliderData.length === 0) {
+    listHtml = '<p style="color: var(--color-text-muted); font-size: 14px;">등록된 커스텀 배경 이미지가 없습니다. (기본 이미지가 출력됩니다.)</p>';
+  }
+
+  const isLimitReached = sliderData.length >= 3;
+
+  container.innerHTML = `
+    <h4 style="color: var(--color-gold-solid); margin-bottom: 10px;">메인 슬라이더 이미지 목록 (최대 3장)</h4>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+      ${listHtml}
+    </div>
+    
+    <div style="border-top: 1px solid var(--color-glass-border); padding-top: 20px;">
+      <h4 style="color: var(--color-gold-solid); margin-bottom: 15px;">신규 이미지 등록</h4>
+      <form id="adminSliderUploadForm" style="display: flex; flex-direction: column; gap: 15px;">
+        <div class="admin-form-group">
+          <label>배경 이미지 파일 (권장: 1920x1080, PNG/JPG/WebP)</label>
+          <div style="display: flex; gap: 15px; align-items: center; margin-top: 5px;">
+            <div id="adminSliderImagePreview" style="width: 160px; height: 90px; border-radius: 6px; border: 1px solid var(--color-glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,0.3); flex-shrink: 0;">
+              <span style="font-size: 12px; color: var(--color-text-muted);">미리보기</span>
+            </div>
+            <div style="flex: 1;">
+              <input type="file" id="sliderImageFile" accept="image/*" style="display: none;" aria-label="슬라이더 이미지 파일 선택">
+              <button type="button" class="btn btn-outline btn-sm" id="btnTriggerSliderUpload" ${isLimitReached ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>파일 선택</button>
+              <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 5px; margin-bottom: 0;">
+                ${isLimitReached ? '이미 최대 3장의 이미지가 모두 등록되어 추가할 수 없습니다.' : '1.5MB 이하의 파일만 업로드할 수 있습니다.'}
+              </p>
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-gold" id="btnSaveSliderImage" ${isLimitReached ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>이미지 추가</button>
+      </form>
+    </div>
+  `;
+
+  const fileInput = document.getElementById('sliderImageFile');
+  const triggerBtn = document.getElementById('btnTriggerSliderUpload');
+  const previewDiv = document.getElementById('adminSliderImagePreview');
+  const uploadForm = document.getElementById('adminSliderUploadForm');
+  let loadedImageData = '';
+
+  if (triggerBtn && fileInput) {
+    triggerBtn.addEventListener('click', () => {
+      if (sliderData.length >= 3) return;
+      fileInput.click();
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          alert('이미지 파일만 업로드할 수 있습니다.');
+          fileInput.value = '';
+          return;
+        }
+        if (file.size > 1500000) {
+          alert('1.5MB 이하의 이미지만 업로드 가능합니다.');
+          fileInput.value = '';
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => {
+          alert('이미지 파일을 읽는 동안 에러가 발생했습니다.');
+          fileInput.value = '';
+        };
+        reader.onload = (event) => {
+          loadedImageData = event.target.result;
+          previewDiv.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = loadedImageData;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+          img.alt = '슬라이더 이미지 미리보기';
+          previewDiv.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (sliderData.length >= 3) {
+        alert('슬라이더 이미지는 최대 3장까지만 등록 가능합니다.');
+        return;
+      }
+      if (!loadedImageData) {
+        alert('업로드할 이미지를 선택해 주세요.');
+        return;
+      }
+
+      const newItem = {
+        id: Date.now(),
+        image: loadedImageData
+      };
+      sliderData.push(newItem);
+      localStorage.setItem('mainSliderData', JSON.stringify(sliderData));
+      alert('배경 이미지가 정상적으로 등록되었습니다.');
+      
+      renderAdminSlider();
+      initMainSlider();
+    });
+  }
+
+  container.querySelectorAll('.btn-delete-slider-image').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      deleteSliderImage(id);
+    });
+  });
+}
+
+const globalScope = typeof window !== 'undefined' ? window : global;
+globalScope.deleteSliderImage = function(id) {
+  if (!confirm('해당 배경 이미지를 삭제하시겠습니까?')) return;
+  let sliderData = [];
+  try {
+    sliderData = JSON.parse(localStorage.getItem('mainSliderData')) || [];
+  } catch (e) {
+    sliderData = [];
+  }
+  sliderData = sliderData.filter(item => item.id !== id);
+  localStorage.setItem('mainSliderData', JSON.stringify(sliderData));
+  
+  renderAdminSlider();
+  initMainSlider();
+};
 
 

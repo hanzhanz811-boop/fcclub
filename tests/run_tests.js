@@ -827,6 +827,127 @@ function runPlayerImageIntegrationTests() {
   }
 }
 
+function runMainSliderTests() {
+  const fs = require('fs');
+  const path = require('path');
+
+  localStorage.clear();
+
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  const originalAlert = global.alert;
+  const originalConfirm = global.confirm;
+
+  let alertMessage = '';
+  global.alert = (msg) => { alertMessage = msg; };
+
+  let confirmCalled = false;
+  global.confirm = (msg) => { confirmCalled = true; return true; };
+
+  // Mock document and elements
+  const appendedChildren = [];
+  const mockHero = {
+    style: { backgroundImage: '' },
+    querySelector: (sel) => {
+      if (sel === '.hero-slider-bg') return { remove: () => {} };
+      return null;
+    },
+    insertBefore: (newChild, refChild) => {
+      appendedChildren.push(newChild);
+    },
+    firstChild: {}
+  };
+
+  const createdElements = [];
+  global.document = {
+    querySelector: (sel) => {
+      if (sel === '.hero-section' || sel === '.hero-banner') return mockHero;
+      if (sel === '.admin-layout nav.admin-nav-column ul[role="tablist"]') return { appendChild: () => {} };
+      return null;
+    },
+    getElementById: (id) => {
+      if (id === 'admin-tab-slider') return null; // dynamically added button doesn't exist initially
+      return {
+        value: '',
+        addEventListener: () => {},
+        style: {},
+        innerHTML: '',
+        querySelectorAll: () => []
+      };
+    },
+    createElement: (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        style: {},
+        setAttribute: () => {},
+        appendChild: (child) => {
+          if (!el.children) el.children = [];
+          el.children.push(child);
+        },
+        querySelectorAll: () => []
+      };
+      createdElements.push(el);
+      return el;
+    },
+    addEventListener: () => {},
+    querySelectorAll: () => []
+  };
+
+  global.window = {
+    addEventListener: () => {}
+  };
+
+  try {
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.initMainSlider = initMainSlider;
+      global.renderAdminSlider = renderAdminSlider;
+      global.deleteSliderImage = deleteSliderImage;
+    `;
+    eval(appJsCode);
+
+    // Test 1: initMainSlider fallback when empty
+    global.initMainSlider();
+    assert.strictEqual(appendedChildren.length, 1, 'Should append one slider background');
+    const sliderBg = appendedChildren[0];
+    assert.strictEqual(sliderBg.tagName, 'DIV');
+    assert.strictEqual(sliderBg.className, 'hero-slider-bg');
+    assert.strictEqual(sliderBg.children.length, 1, 'Should have 1 slide by default');
+    assert.strictEqual(sliderBg.children[0].style.backgroundImage, "url('assets/hero-bg.jpg')", 'Fallback image should be assets/hero-bg.jpg');
+
+    // Test 2: initMainSlider with custom data
+    appendedChildren.length = 0;
+    const testData = [
+      { id: 101, image: 'image1.png' },
+      { id: 102, image: 'image2.png' }
+    ];
+    localStorage.setItem('mainSliderData', JSON.stringify(testData));
+    global.initMainSlider();
+    assert.strictEqual(appendedChildren.length, 1);
+    const customSliderBg = appendedChildren[0];
+    assert.strictEqual(customSliderBg.children.length, 2);
+    assert.strictEqual(customSliderBg.children[0].style.backgroundImage, "url('image1.png')");
+    assert.strictEqual(customSliderBg.children[1].style.backgroundImage, "url('image2.png')");
+
+    // Test 3: deleteSliderImage
+    confirmCalled = false;
+    global.deleteSliderImage(101);
+    assert.ok(confirmCalled, 'Should ask for confirmation');
+    const updatedData = JSON.parse(localStorage.getItem('mainSliderData'));
+    assert.strictEqual(updatedData.length, 1, 'Should delete one item');
+    assert.strictEqual(updatedData[0].id, 102, 'Remaining item should have ID 102');
+
+  } finally {
+    global.document = originalDocument;
+    global.window = originalWindow;
+    global.alert = originalAlert;
+    global.confirm = originalConfirm;
+    delete global.initMainSlider;
+    delete global.renderAdminSlider;
+    delete global.deleteSliderImage;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -841,6 +962,7 @@ runTestBlock('Signup Nickname Validation Tests (runSignupNicknameValidationTests
 runTestBlock('Admin Member Management Dashboard Tests (runAdminMembersDashboardTests)', runAdminMembersDashboardTests);
 runTestBlock('Squad Form Image Preview and Validation Tests (runSquadFormImageTests)', runSquadFormImageTests);
 runTestBlock('Player Image Integration Tests (runPlayerImageIntegrationTests)', runPlayerImageIntegrationTests);
+runTestBlock('Main Slider Unit & Integration Tests (runMainSliderTests)', runMainSliderTests);
 
 
 // Print clean test report
