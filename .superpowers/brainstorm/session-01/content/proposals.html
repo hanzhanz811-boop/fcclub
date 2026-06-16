@@ -1,0 +1,50 @@
+<h2>구현 접근 방식 및 추천 아키텍처 제안</h2>
+<p class="subtitle">구현의 안정성과 코드 유지보수성을 극대화하기 위해 아래 두 가지 방안을 제안합니다.</p>
+
+<div class="split">
+  <div class="mockup" style="border: 2px solid var(--color-gold-solid); padding: 15px; border-radius: 8px; background: rgba(212, 175, 55, 0.05);">
+    <div class="mockup-header" style="color: var(--color-gold-solid); font-weight: 800;">방안 A: 단일 통합 설계 (추천)</div>
+    <div class="mockup-body">
+      <p><strong>설명</strong>: 메인 효과(슬라이더, 필터) 및 팝업 로직을 기존 <a href="file:///J:/project/fcclub/js/app.js">js/app.js</a> 내부에 통합하고, 관리자 메뉴 역시 기존 탭 렌더러에 연동합니다.</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>장점</h4>
+          <ul>
+            <li>기존 <code>localStorage</code> 데이터 바인딩 헬퍼 함수 재사용</li>
+            <li>로그인 회원 세션(admin 권한) 체크와 즉각적인 화면 렌더링 동기화</li>
+            <li>추가적인 script 태그 추가 및 의존성 관리 불필요</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>단점</h4>
+          <ul>
+            <li>app.js 파일의 크기가 다소 증가함</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup" style="padding: 15px; border-radius: 8px;">
+    <div class="mockup-header" style="font-weight: 800;">방안 B: 파일 분리 모듈화 설계</div>
+    <div class="mockup-body">
+      <p><strong>설명</strong>: 메인 화면 이펙트와 팝업 제어를 독립된 파일(예: <code>js/main-effects.js</code>)로 분리하고 HTML에서 개별 로드합니다.</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>장점</h4>
+          <ul>
+            <li>기능별 코드의 완전한 물리적 격리</li>
+            <li>독립적인 기능 관리 용이</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>단점</h4>
+          <ul>
+            <li>기존 전역 <code>currentUser</code> 권한이나 <code>switchTab</code> 함수 호출 시 모듈 간 통신 필요</li>
+            <li>HTML에 여러 script 파일들을 추가함으로써 관리 요소가 분산됨</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

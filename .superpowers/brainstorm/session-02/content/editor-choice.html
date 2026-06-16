@@ -1,0 +1,26 @@
+<h2>게시판 웹 에디터(WYSIWYG) 도입 방식 선택</h2>
+<p class="subtitle">뉴스 및 자유게시판의 작성 폼에 적용할 에디터 방식을 선택해 주세요.</p>
+
+<div class="options">
+  <div class="option" data-choice="quill" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Quill Editor (CDN 연동) - 추천</h3>
+      <p>가장 대중적이고 디자인이 수려한 Rich Text 에디터입니다. 굵게, 기울임, 링크, 헤더 지정 등의 기능이 미려한 툴바로 제공되며, 작성된 결과물이 HTML 형식으로 로컬 스토리지에 안전하게 보관됩니다.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="custom" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>커스텀 Vanilla JS 에디터 (자체 구현)</h3>
+      <p>외부 라이브러리(CDN)에 의존하지 않고, HTML5 <code>contenteditable</code>과 Vanilla JS를 활용하여 최소한의 서식(굵게, 기울임, 링크)을 지원하는 가볍고 단순한 에디터를 빌드합니다.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="markdown" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>EasyMDE 마크다운 에디터 (CDN 연동)</h3>
+      <p>마크다운(Markdown) 문법 기반의 에디터입니다. 실시간 렌더링 미리보기를 제공하여 개발자나 마크다운 선호 팬들에게 깔끔한 문서 작성을 제공하지만, 일반 사용자에게는 약간 낯설 수 있습니다.</p>
+    </div>
+  </div>
+</div>
