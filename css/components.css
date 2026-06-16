@@ -844,7 +844,29 @@
   font-size: 15px;
   line-height: 1.8;
   color: var(--color-text-primary);
-  white-space: pre-line;
+  word-break: break-word;
+}
+
+/* Rich Text Media Responsive Styles */
+.news-detail-body img,
+.post-detail-content img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+}
+
+.news-detail-body iframe,
+.news-detail-body video,
+.post-detail-content iframe,
+.post-detail-content video {
+  max-width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
 }
 
 /* Admin Page Styles */
