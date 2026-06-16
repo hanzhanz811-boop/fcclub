@@ -186,16 +186,22 @@ function sanitizeHTML(html) {
   if (!html) return '';
   
   let doc;
-  if (typeof window === 'undefined' || !window.DOMParser) {
-    if (typeof global.DOMParser !== 'undefined') {
-      const parser = new global.DOMParser();
-      doc = parser.parseFromString(html, 'text/html');
+  try {
+    if (typeof window === 'undefined' || !window.DOMParser) {
+      if (typeof global.DOMParser !== 'undefined') {
+        const parser = new global.DOMParser();
+        doc = parser.parseFromString(html, 'text/html');
+      }
     } else {
-      return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      const parser = new window.DOMParser();
+      doc = parser.parseFromString(html, 'text/html');
     }
-  } else {
-    const parser = new window.DOMParser();
-    doc = parser.parseFromString(html, 'text/html');
+  } catch (e) {
+    console.error('DOMParser failed, falling back to regex sanitization:', e);
+  }
+  
+  if (!doc || !doc.body) {
+    return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
   }
   
   const body = doc.body;

@@ -11,15 +11,29 @@ if (typeof global.localStorage === 'undefined') {
   };
 }
 
-global.DOMParser = class {
-  parseFromString(html, type) {
-    const elements = [];
-    const tagRegex = /<([a-z1-6]+)([^>]*?)>(.*?)<\/\1>|<([a-z1-6]+)([^>]*?)\/?>/gi;
-    let match;
-    while ((match = tagRegex.exec(html)) !== null) {
-      const tagName = (match[1] || match[4]).toUpperCase();
-      const rawAttrs = match[2] || match[5] || '';
-      const innerHTML = match[3] || '';
+function mockParseHTML(html) {
+  const root = { tagName: 'BODY', attributes: {}, children: [], isRemoved: false };
+  const stack = [root];
+  
+  const regex = /(<\/?[a-z1-6]+[^>]*>)/gi;
+  const parts = html.split(regex);
+  
+  parts.forEach(part => {
+    if (!part) return;
+    if (part.startsWith('</')) {
+      const tagName = part.substring(2, part.length - 1).trim().toUpperCase();
+      while (stack.length > 1 && stack[stack.length - 1].tagName !== tagName) {
+        stack.pop();
+      }
+      if (stack.length > 1) {
+        stack.pop();
+      }
+    } else if (part.startsWith('<')) {
+      const isSelfClosing = part.endsWith('/>');
+      const tagContent = part.substring(1, part.length - (isSelfClosing ? 2 : 1)).trim();
+      const firstSpace = tagContent.search(/\s/);
+      const tagName = (firstSpace === -1 ? tagContent : tagContent.substring(0, firstSpace)).toUpperCase();
+      const rawAttrs = firstSpace === -1 ? '' : tagContent.substring(firstSpace).trim();
       
       const attributes = {};
       Object.defineProperty(attributes, 'length', {
@@ -33,7 +47,7 @@ global.DOMParser = class {
       let attrMatch;
       let index = 0;
       while ((attrMatch = attrRegex.exec(rawAttrs)) !== null) {
-        const name = attrMatch[1];
+        const name = attrMatch[1].toLowerCase();
         const value = attrMatch[2];
         Object.defineProperty(attributes, index, {
           value: { name, value },
@@ -46,19 +60,26 @@ global.DOMParser = class {
       }
       attributes.length = index;
       
+      const parent = stack[stack.length - 1];
       const el = {
         tagName,
-        innerHTML,
         attributes,
+        children: [],
+        parent,
         isRemoved: false,
-        remove() { this.isRemoved = true; },
-        getAttribute(name) { return this.attributes[name] || null; },
+        remove() {
+          this.isRemoved = true;
+        },
+        getAttribute(name) {
+          return this.attributes[name.toLowerCase()] || null;
+        },
         removeAttribute(name) {
-          delete this.attributes[name];
+          const lowerName = name.toLowerCase();
+          delete this.attributes[lowerName];
           const list = [];
           for (let idx = 0; idx < this.attributes.length; idx++) {
             const item = this.attributes[idx];
-            if (item && item.name !== name) {
+            if (item && item.name !== lowerName) {
               list.push(item);
             }
             delete this.attributes[idx];
@@ -72,39 +93,84 @@ global.DOMParser = class {
             });
           });
           this.attributes.length = list.length;
+        },
+        get innerHTML() {
+          return mockSerializeHTML(this);
         }
       };
-      elements.push(el);
+      
+      parent.children.push(el);
+      if (!isSelfClosing && !['IMG', 'HR', 'BR', 'INPUT'].includes(tagName)) {
+        stack.push(el);
+      }
+    } else {
+      const parent = stack[stack.length - 1];
+      parent.children.push({
+        isText: true,
+        text: part,
+        isRemoved: false,
+        remove() { this.isRemoved = true; }
+      });
     }
-    
+  });
+  
+  return root;
+}
+
+function mockSerializeHTML(node) {
+  if (node.isRemoved) return '';
+  if (node.isText) return node.text;
+  
+  let childrenHTML = node.children.map(child => mockSerializeHTML(child)).join('');
+  if (node.tagName === 'BODY') {
+    return childrenHTML;
+  }
+  
+  let attrs = '';
+  for (let k in node.attributes) {
+    attrs += ` ${k}="${node.attributes[k]}"`;
+  }
+  
+  return `<${node.tagName.toLowerCase()}${attrs}>${childrenHTML}</${node.tagName.toLowerCase()}>`;
+}
+
+function mockQuerySelectorAll(node, selector) {
+  const results = [];
+  function traverse(curr) {
+    if (curr.isText) return;
+    if (curr !== node) {
+      if (mockMatches(curr, selector)) {
+        results.push(curr);
+      }
+    }
+    if (curr.children) {
+      curr.children.forEach(traverse);
+    }
+  }
+  traverse(node);
+  return results;
+}
+
+function mockMatches(node, selector) {
+  const selectors = selector.split(',').map(s => s.trim().toLowerCase());
+  return selectors.some(sel => {
+    if (sel === '*') return true;
+    if (sel.includes('script') && ['SCRIPT', 'OBJECT', 'EMBED', 'LINK', 'META', 'STYLE'].includes(node.tagName)) return true;
+    return node.tagName.toLowerCase() === sel;
+  });
+}
+
+global.DOMParser = class {
+  parseFromString(html, type) {
+    const root = mockParseHTML(html);
     const body = {
       querySelectorAll: (selector) => {
-        if (selector.includes('script')) {
-          return elements.filter(el => ['SCRIPT', 'OBJECT', 'EMBED', 'LINK', 'META', 'STYLE'].includes(el.tagName));
-        }
-        if (selector === 'iframe') {
-          return elements.filter(el => el.tagName === 'IFRAME');
-        }
-        if (selector === '*') {
-          return elements;
-        }
-        return [];
+        return mockQuerySelectorAll(root, selector);
       },
       get innerHTML() {
-        return elements.map(el => {
-          if (el.isRemoved) return '';
-          let attrs = '';
-          for (let k in el.attributes) {
-            attrs += ` ${k}="${el.attributes[k]}"`;
-          }
-          if (['IMG', 'IFRAME'].includes(el.tagName)) {
-            return `<${el.tagName.toLowerCase()}${attrs}>${el.innerHTML || ''}</${el.tagName.toLowerCase()}>`;
-          }
-          return `<${el.tagName.toLowerCase()}${attrs}>${el.innerHTML || ''}</${el.tagName.toLowerCase()}>`;
-        }).join('');
+        return mockSerializeHTML(root);
       }
     };
-    
     return { body };
   }
 };
