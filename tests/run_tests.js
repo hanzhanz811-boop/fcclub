@@ -872,6 +872,40 @@ function runMainSliderTests() {
     firstChild: {}
   };
 
+  let adminWorkContentHTML = '';
+  let adminSliderContentHTML = '';
+  const fileInputListeners = {};
+  const triggerBtnListeners = {};
+  const uploadFormListeners = {};
+
+  const mockElements = {
+    'adminWorkContent': {
+      get innerHTML() { return adminWorkContentHTML; },
+      set innerHTML(val) { adminWorkContentHTML = val; }
+    },
+    'adminSliderContent': {
+      get innerHTML() { return adminSliderContentHTML; },
+      set innerHTML(val) { adminSliderContentHTML = val; },
+      querySelectorAll: (sel) => []
+    },
+    'sliderImageFile': {
+      value: '',
+      addEventListener: (ev, cb) => { fileInputListeners[ev] = cb; },
+      style: {}
+    },
+    'btnTriggerSliderUpload': {
+      addEventListener: (ev, cb) => { triggerBtnListeners[ev] = cb; },
+      style: {}
+    },
+    'adminSliderImagePreview': {
+      innerHTML: '',
+      appendChild: (child) => {}
+    },
+    'adminSliderUploadForm': {
+      addEventListener: (ev, cb) => { uploadFormListeners[ev] = cb; }
+    }
+  };
+
   const createdElements = [];
   global.document = {
     querySelector: (sel) => {
@@ -881,7 +915,7 @@ function runMainSliderTests() {
     },
     getElementById: (id) => {
       if (id === 'admin-tab-slider') return null; // dynamically added button doesn't exist initially
-      return {
+      return mockElements[id] || {
         value: '',
         addEventListener: () => {},
         style: {},
@@ -927,7 +961,7 @@ function runMainSliderTests() {
     assert.strictEqual(sliderBg.tagName, 'DIV');
     assert.strictEqual(sliderBg.className, 'hero-slider-bg');
     assert.strictEqual(sliderBg.children.length, 1, 'Should have 1 slide by default');
-    assert.strictEqual(sliderBg.children[0].style.backgroundImage, "url('assets/hero-bg.jpg')", 'Fallback image should be assets/hero-bg.jpg');
+    assert.strictEqual(sliderBg.children[0].style.backgroundImage, "url('assets/stadium_bg.png')", 'Fallback image should be assets/stadium_bg.png');
 
     // Test 2: initMainSlider with custom data
     appendedChildren.length = 0;
@@ -951,6 +985,30 @@ function runMainSliderTests() {
     assert.strictEqual(updatedData.length, 1, 'Should delete one item');
     assert.strictEqual(updatedData[0].id, 102, 'Remaining item should have ID 102');
 
+    // Test 4: 3장 초과 등록 시 업로드 차단 동작 검증
+    localStorage.setItem('mainSliderData', JSON.stringify([
+      { id: 201, image: 'image1.png' },
+      { id: 202, image: 'image2.png' },
+      { id: 203, image: 'image3.png' }
+    ]));
+    
+    alertMessage = '';
+    global.renderAdminSlider();
+
+    // 1) 3장 찼을 때 innerHTML 템플릿에 추가 불가능 안내 문구 및 disabled 렌더링 확인
+    assert.ok(adminSliderContentHTML.includes('이미 최대 3장의 이미지가 모두 등록되어 추가할 수 없습니다.'), 'Should show limit message');
+    assert.ok(adminSliderContentHTML.includes('disabled'), 'Should have disabled attributes');
+
+    // 2) submit 핸들러 동작 시 차단 검증
+    assert.ok(typeof uploadFormListeners['submit'] === 'function', 'Submit listener should be registered');
+    let preventDefaultCalled = false;
+    const mockSubmitEvent = {
+      preventDefault: () => { preventDefaultCalled = true; }
+    };
+    uploadFormListeners['submit'](mockSubmitEvent);
+    assert.ok(preventDefaultCalled, 'preventDefault should be called on submit when limit is reached');
+    assert.strictEqual(alertMessage, '슬라이더 이미지는 최대 3장까지만 등록 가능합니다.', 'Should alert on exceeding limit');
+
   } finally {
     activeIntervals.forEach(id => originalClearInterval(id));
     global.setInterval = originalSetInterval;
@@ -963,6 +1021,9 @@ function runMainSliderTests() {
     delete global.initMainSlider;
     delete global.renderAdminSlider;
     delete global.deleteSliderImage;
+    delete global.sliderTimer;
+    delete global.isValidUrl;
+    delete global.initPopupEvents;
     localStorage.removeItem('mainSliderData');
   }
 }
@@ -1077,6 +1138,8 @@ function runMainSliderAndPopupTests() {
     global.alert = originalAlert;
     delete global.parseYoutubeEmbedUrl;
     delete global.checkAndShowPopup;
+    delete global.isValidUrl;
+    delete global.initPopupEvents;
     localStorage.removeItem('mainPopupData');
     localStorage.removeItem('popup_hide_until');
   }

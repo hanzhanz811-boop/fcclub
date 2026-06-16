@@ -165,6 +165,14 @@ function switchTab(tabId) {
   // 탭 이동 시 상단 스크롤 복구
   window.scrollTo(0, 0);
 
+  // 홈(home) 탭이 아닐 경우 백그라운드 슬라이더 타이머 해제 (자원 낭비 방지)
+  if (tabId !== 'home') {
+    if (typeof sliderTimer !== 'undefined' && sliderTimer) {
+      clearInterval(sliderTimer);
+      sliderTimer = null;
+    }
+  }
+
   // 탭별 추가 액션
   if (tabId === 'home') {
     initMainSlider();
@@ -1740,7 +1748,7 @@ function initMainSlider() {
 
   // Fallback if empty
   if (sliderData.length === 0) {
-    sliderData = [{ id: 1, image: 'assets/hero-bg.jpg' }];
+    sliderData = [{ id: 1, image: 'assets/stadium_bg.png' }];
   }
 
   const sliderBg = document.createElement('div');
@@ -1976,7 +1984,7 @@ function checkAndShowPopup() {
   const body = document.getElementById('popupBodyContent');
   if (!overlay || !body) return;
 
-  title.textContent = escapeHTML(popupConfig.title || 'SUNGMAN FC 공지');
+  title.textContent = popupConfig.title || 'SUNGMAN FC 공지';
   body.innerHTML = '';
 
   const wrapper = document.createElement('div');
@@ -1984,13 +1992,13 @@ function checkAndShowPopup() {
 
   if (popupConfig.type === 'image') {
     const img = document.createElement('img');
-    img.src = escapeHTML(popupConfig.mediaUrl);
-    img.alt = escapeHTML(popupConfig.title) + ' 이미지 공지';
+    img.src = popupConfig.mediaUrl;
+    img.alt = (popupConfig.title || '') + ' 이미지 공지';
     img.className = 'main-popup-img';
     // 이미지 클릭 시 링크 이동 (존재하는 경우)
     if (popupConfig.link && isValidUrl(popupConfig.link)) {
       const anchor = document.createElement('a');
-      anchor.href = escapeHTML(popupConfig.link);
+      anchor.href = popupConfig.link;
       anchor.target = '_blank';
       anchor.appendChild(img);
       wrapper.appendChild(anchor);
@@ -2004,14 +2012,14 @@ function checkAndShowPopup() {
     const parsedUrl = parseYoutubeEmbedUrl(popupConfig.mediaUrl);
     if (parsedUrl.startsWith('https://www.youtube.com/embed/')) {
       const iframe = document.createElement('iframe');
-      iframe.src = escapeHTML(parsedUrl);
+      iframe.src = parsedUrl;
       iframe.sandbox = 'allow-scripts allow-same-origin allow-presentation';
       iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
       iframe.allowFullscreen = true;
       videoContainer.appendChild(iframe);
     } else if (isValidUrl(popupConfig.mediaUrl)) {
       const video = document.createElement('video');
-      video.src = escapeHTML(popupConfig.mediaUrl);
+      video.src = popupConfig.mediaUrl;
       video.controls = true;
       video.autoplay = true;
       video.muted = true;
@@ -2167,6 +2175,12 @@ function renderAdminPopup() {
           return;
         }
         const reader = new FileReader();
+        reader.onerror = () => {
+          alert('이미지 파일을 읽는 동안 에러가 발생했습니다.');
+          fileInput.value = '';
+          loadedImageData = '';
+          previewDiv.innerHTML = '<span style="font-size: 11px; color: var(--color-text-muted);">미리보기</span>';
+        };
         reader.onload = (event) => {
           loadedImageData = event.target.result;
           if (urlInput) urlInput.value = ''; // URL 텍스트 필드 클리어
@@ -2193,7 +2207,8 @@ function renderAdminPopup() {
       let link = '';
 
       if (selectedType === 'image') {
-        mediaUrl = loadedImageData || (urlInput ? urlInput.value.trim() : '');
+        const typedUrl = urlInput ? urlInput.value.trim() : '';
+        mediaUrl = typedUrl || loadedImageData;
         link = document.getElementById('popupLinkInput').value.trim();
         if (!mediaUrl) {
           alert('팝업에 띄울 이미지를 업로드하거나 외부 주소를 적어 주세요.');
