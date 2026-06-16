@@ -1121,7 +1121,7 @@ function showSquadForm(playerId = null) {
       previewDiv.appendChild(img);
     } else {
       const displayNum = numberInput ? (numberInput.value || '?') : '?';
-      previewDiv.innerHTML = `<span style="font-size: 24px; color: var(--color-text-muted); font-weight: 800;">${displayNum}</span>`;
+      previewDiv.innerHTML = `<span style="font-size: 24px; color: var(--color-text-muted); font-weight: 800;">${escapeHTML(String(displayNum))}</span>`;
     }
   }
 
@@ -1165,6 +1165,8 @@ function showSquadForm(playerId = null) {
         reader.onerror = () => {
           alert('이미지 파일을 읽는 동안 에러가 발생했습니다.');
           fileInput.value = '';
+          loadedImageData = imageVal;
+          updatePreview();
         };
         reader.readAsDataURL(file);
       }
@@ -1760,8 +1762,8 @@ function renderAdminSlider() {
     listHtml += `
       <div style="display: flex; align-items: center; gap: 15px; border: 1px solid var(--color-glass-border); padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.2);">
         <img src="${escapeHTML(item.image)}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px;">
-        <div style="flex: 1; font-size: 13px; color: var(--color-text-muted);">등록된 이미지 (ID: ${item.id})</div>
-        <button class="btn btn-outline btn-sm btn-delete-slider-image" data-id="${item.id}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);">삭제</button>
+        <div style="flex: 1; font-size: 13px; color: var(--color-text-muted);">등록된 이미지 (ID: ${escapeHTML(String(item.id))})</div>
+        <button class="btn btn-outline btn-sm btn-delete-slider-image" data-id="${escapeHTML(String(item.id))}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);">삭제</button>
       </div>
     `;
   });
@@ -1833,6 +1835,8 @@ function renderAdminSlider() {
         reader.onerror = () => {
           alert('이미지 파일을 읽는 동안 에러가 발생했습니다.');
           fileInput.value = '';
+          loadedImageData = '';
+          previewDiv.innerHTML = '<span style="font-size: 12px; color: var(--color-text-muted);">미리보기</span>';
         };
         reader.onload = (event) => {
           loadedImageData = event.target.result;

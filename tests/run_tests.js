@@ -837,12 +837,26 @@ function runMainSliderTests() {
   const originalWindow = global.window;
   const originalAlert = global.alert;
   const originalConfirm = global.confirm;
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
 
   let alertMessage = '';
   global.alert = (msg) => { alertMessage = msg; };
 
   let confirmCalled = false;
   global.confirm = (msg) => { confirmCalled = true; return true; };
+
+  const activeIntervals = [];
+  global.setInterval = (cb, delay) => {
+    const id = originalSetInterval(cb, delay);
+    activeIntervals.push(id);
+    return id;
+  };
+  global.clearInterval = (id) => {
+    originalClearInterval(id);
+    const index = activeIntervals.indexOf(id);
+    if (index > -1) activeIntervals.splice(index, 1);
+  };
 
   // Mock document and elements
   const appendedChildren = [];
@@ -938,6 +952,10 @@ function runMainSliderTests() {
     assert.strictEqual(updatedData[0].id, 102, 'Remaining item should have ID 102');
 
   } finally {
+    activeIntervals.forEach(id => originalClearInterval(id));
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
+
     global.document = originalDocument;
     global.window = originalWindow;
     global.alert = originalAlert;
@@ -945,6 +963,7 @@ function runMainSliderTests() {
     delete global.initMainSlider;
     delete global.renderAdminSlider;
     delete global.deleteSliderImage;
+    localStorage.removeItem('mainSliderData');
   }
 }
 
