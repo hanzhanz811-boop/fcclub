@@ -1929,6 +1929,19 @@ globalScope.deleteSliderImage = function(id) {
   initMainSlider();
 };
 
+function isValidUrl(url) {
+  if (!url) return false;
+  try {
+    if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../') || url.startsWith('#')) {
+      return true;
+    }
+    const parsed = new URL(url);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch (e) {
+    return false;
+  }
+}
+
 function parseYoutubeEmbedUrl(url) {
   if (!url) return '';
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -1975,7 +1988,7 @@ function checkAndShowPopup() {
     img.alt = escapeHTML(popupConfig.title) + ' 이미지 공지';
     img.className = 'main-popup-img';
     // 이미지 클릭 시 링크 이동 (존재하는 경우)
-    if (popupConfig.link) {
+    if (popupConfig.link && isValidUrl(popupConfig.link)) {
       const anchor = document.createElement('a');
       anchor.href = escapeHTML(popupConfig.link);
       anchor.target = '_blank';
@@ -1989,13 +2002,14 @@ function checkAndShowPopup() {
     videoContainer.className = 'main-popup-video-container';
     
     const parsedUrl = parseYoutubeEmbedUrl(popupConfig.mediaUrl);
-    if (parsedUrl.includes('youtube.com/embed/')) {
+    if (parsedUrl.startsWith('https://www.youtube.com/embed/')) {
       const iframe = document.createElement('iframe');
       iframe.src = escapeHTML(parsedUrl);
+      iframe.sandbox = 'allow-scripts allow-same-origin allow-presentation';
       iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
       iframe.allowFullscreen = true;
       videoContainer.appendChild(iframe);
-    } else {
+    } else if (isValidUrl(popupConfig.mediaUrl)) {
       const video = document.createElement('video');
       video.src = escapeHTML(popupConfig.mediaUrl);
       video.controls = true;
@@ -2206,6 +2220,7 @@ globalScope.parseYoutubeEmbedUrl = parseYoutubeEmbedUrl;
 globalScope.checkAndShowPopup = checkAndShowPopup;
 globalScope.initPopupEvents = initPopupEvents;
 globalScope.renderAdminPopup = renderAdminPopup;
+globalScope.isValidUrl = isValidUrl;
 
 
 

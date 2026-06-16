@@ -1077,6 +1077,8 @@ function runMainSliderAndPopupTests() {
     global.alert = originalAlert;
     delete global.parseYoutubeEmbedUrl;
     delete global.checkAndShowPopup;
+    localStorage.removeItem('mainPopupData');
+    localStorage.removeItem('popup_hide_until');
   }
 }
 
