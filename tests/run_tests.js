@@ -1422,6 +1422,64 @@ function runNewsSortingTests() {
   }
 }
 
+function runAdminNewsQuillTests() {
+  const fs = require('fs');
+  const path = require('path');
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  
+  let isQuillInitialized = false;
+  let appendedHTML = '';
+  
+  const mockContainer = {
+    set innerHTML(val) { appendedHTML = val; },
+    get innerHTML() { return appendedHTML; },
+    querySelectorAll: () => []
+  };
+  
+  global.document = {
+    addEventListener: () => {},
+    getElementById: (id) => {
+      if (id === 'adminWorkContent') return mockContainer;
+      return { value: '', addEventListener: () => {}, style: {} };
+    },
+    createElement: () => ({ setAttribute: () => {}, style: {} }),
+    querySelectorAll: () => []
+  };
+  
+  try {
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.renderAdminNews = renderAdminNews;
+      global.showNewsForm = showNewsForm;
+    `;
+    eval(appJsCode);
+
+    // Case A: Quill이 없을 때 textarea 정상 폴백 렌더링 확인
+    global.window = { Quill: undefined };
+    global.showNewsForm();
+    assert.ok(appendedHTML.includes('<textarea'), 'Fallback to textarea when Quill is absent');
+    
+    // Case B: Quill이 존재할 때 editor-container 생성 확인
+    global.window = {
+      Quill: class {
+        constructor(selector, options) {
+          isQuillInitialized = true;
+          this.root = { innerHTML: '초기 본문' };
+        }
+        getText() { return '초기 본문'; }
+      }
+    };
+    global.showNewsForm();
+    assert.ok(appendedHTML.includes('id="newsEditorContainer"'), 'Render editor container div when Quill is present');
+  } finally {
+    global.document = originalDocument;
+    global.window = originalWindow;
+    delete global.renderAdminNews;
+    delete global.showNewsForm;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1440,6 +1498,7 @@ runTestBlock('Main Slider Unit & Integration Tests (runMainSliderTests)', runMai
 runTestBlock('Main Slider & Popup Integration Tests (runMainSliderAndPopupTests)', runMainSliderAndPopupTests);
 runTestBlock('Sanitize HTML Safety Tests (runSanitizeHTMLTests)', runSanitizeHTMLTests);
 runTestBlock('News Sorting Tests (runNewsSortingTests)', runNewsSortingTests);
+runTestBlock('Admin News Quill Tests (runAdminNewsQuillTests)', runAdminNewsQuillTests);
 
 
 // Print clean test report

@@ -529,7 +529,7 @@ function renderNewsPage() {
         <h3 class="news-detail-title">${escapeHTML(activeNews.title)}</h3>
         <div class="news-detail-date">${escapeHTML(activeNews.date)}</div>
       </div>
-      <div class="news-detail-body">${escapeHTML(activeNews.content)}</div>
+      <div class="news-detail-body">${sanitizeHTML(activeNews.content)}</div>
     `;
   } else {
     detailContainer.innerHTML = `
@@ -885,6 +885,8 @@ function showNewsForm(newsId = null) {
   const dateVal = isEdit ? news.date : defaultDate;
   const contentVal = isEdit ? news.content : '';
 
+  const hasQuill = typeof window !== 'undefined' && typeof window.Quill !== 'undefined';
+
   let html = `
     <div class="admin-section-header">
       <h3>${isEdit ? '뉴스 수정' : '새 뉴스 등록'}</h3>
@@ -900,7 +902,12 @@ function showNewsForm(newsId = null) {
       </div>
       <div class="admin-form-group">
         <label for="newsFormContent">내용</label>
-        <textarea id="newsFormContent" required rows="10" placeholder="뉴스 본문을 입력하세요" style="width: 100%; min-height: 150px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; padding: 10px; color: var(--color-text-primary); font-family: inherit; resize: vertical;">${escapeHTML(contentVal)}</textarea>
+        ${hasQuill ? `
+          <div id="newsEditorContainer" style="height: 300px; background: rgba(0,0,0,0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; color: #fff;"></div>
+          <input type="hidden" id="newsFormContent" value="${escapeHTML(contentVal)}">
+        ` : `
+          <textarea id="newsFormContent" required rows="10" placeholder="뉴스 본문을 입력하세요" style="width: 100%; min-height: 150px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; padding: 10px; color: var(--color-text-primary); font-family: inherit; resize: vertical;">${escapeHTML(contentVal)}</textarea>
+        `}
       </div>
       <div style="display: flex; gap: 10px; margin-top: 10px;">
         <button type="submit" class="btn btn-gold" style="flex: 1;">저장</button>
@@ -911,6 +918,31 @@ function showNewsForm(newsId = null) {
 
   container.innerHTML = html;
 
+  let quillInstance = null;
+  if (hasQuill) {
+    const editorDiv = document.getElementById('newsEditorContainer');
+    if (editorDiv) {
+      quillInstance = new window.Quill('#newsEditorContainer', {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            ['link', 'image', 'video'],
+            ['clean']
+          ]
+        }
+      });
+      const hiddenInput = document.getElementById('newsFormContent');
+      if (hiddenInput && hiddenInput.value) {
+        quillInstance.root.innerHTML = hiddenInput.value;
+      }
+    }
+  }
+
   document.getElementById('btnCancelNewsForm').addEventListener('click', () => {
     renderAdminNews();
   });
@@ -919,7 +951,25 @@ function showNewsForm(newsId = null) {
     e.preventDefault();
     const title = document.getElementById('newsFormTitle').value.trim();
     const date = document.getElementById('newsFormDate').value.trim();
-    const content = document.getElementById('newsFormContent').value.trim();
+    
+    let content = '';
+    if (quillInstance) {
+      const textVal = quillInstance.getText().trim();
+      const htmlVal = quillInstance.root.innerHTML;
+      if (textVal.length === 0 && !htmlVal.includes('<img') && !htmlVal.includes('<iframe')) {
+        alert('본문 내용을 입력해 주세요.');
+        return;
+      }
+      content = sanitizeHTML(htmlVal);
+    } else {
+      const textEl = document.getElementById('newsFormContent');
+      content = textEl ? textEl.value.trim() : '';
+      if (!content) {
+        alert('본문 내용을 입력해 주세요.');
+        return;
+      }
+      content = sanitizeHTML(content);
+    }
 
     if (!title || !date || !content) {
       alert('모든 필드를 입력해 주세요.');
