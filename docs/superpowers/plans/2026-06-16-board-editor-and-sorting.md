@@ -134,9 +134,66 @@
   ```
   Node 테스트용 글로벌 `DOMParser` 모킹 주입 (`tests/run_tests.js`의 `global.localStorage` 초기화 구문 부근):
   ```javascript
-  const { JSDOM } = require('jsdom');
-  const jsdomInstance = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-  global.DOMParser = jsdomInstance.window.DOMParser;
+  global.DOMParser = class {
+    parseFromString(html, type) {
+      const elements = [];
+      const tagRegex = /<([a-z1-6]+)([^>]*?)>(.*?)<\/\1>|<([a-z1-6]+)([^>]*?)\/?>/gi;
+      let match;
+      while ((match = tagRegex.exec(html)) !== null) {
+        const tagName = (match[1] || match[4]).toUpperCase();
+        const rawAttrs = match[2] || match[5] || '';
+        const innerHTML = match[3] || '';
+        
+        const attributes = {};
+        const attrRegex = /(\w+)\s*=\s*["']([^"']*)["']/g;
+        let attrMatch;
+        while ((attrMatch = attrRegex.exec(rawAttrs)) !== null) {
+          attributes[attrMatch[1]] = attrMatch[2];
+        }
+        
+        const el = {
+          tagName,
+          innerHTML,
+          attributes,
+          isRemoved: false,
+          remove() { this.isRemoved = true; },
+          getAttribute(name) { return this.attributes[name] || null; },
+          removeAttribute(name) { delete this.attributes[name]; }
+        };
+        elements.push(el);
+      }
+      
+      const body = {
+        querySelectorAll: (selector) => {
+          if (selector.includes('script')) {
+            return elements.filter(el => ['SCRIPT', 'OBJECT', 'EMBED', 'LINK', 'META', 'STYLE'].includes(el.tagName));
+          }
+          if (selector === 'iframe') {
+            return elements.filter(el => el.tagName === 'IFRAME');
+          }
+          if (selector === '*') {
+            return elements;
+          }
+          return [];
+        },
+        get innerHTML() {
+          return elements.map(el => {
+            if (el.isRemoved) return '';
+            let attrs = '';
+            for (let k in el.attributes) {
+              attrs += ` ${k}="${el.attributes[k]}"`;
+            }
+            if (['IMG', 'IFRAME'].includes(el.tagName)) {
+              return `<${el.tagName.toLowerCase()}${attrs}>${el.innerHTML || ''}</${el.tagName.toLowerCase()}>`;
+            }
+            return `<${el.tagName.toLowerCase()}${attrs}>${el.innerHTML || ''}</${el.tagName.toLowerCase()}>`;
+          }).join('');
+        }
+      };
+      
+      return { body };
+    }
+  };
   ```
 
 - [ ] **Step 4: 테스트 실행 및 패스 확인**
