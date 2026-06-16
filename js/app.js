@@ -1974,8 +1974,8 @@ function renderAdminSlider() {
   });
 }
 
-const globalScope = typeof window !== 'undefined' ? window : global;
-globalScope.deleteSliderImage = function(id) {
+const appGlobalScope = typeof window !== 'undefined' ? window : global;
+appGlobalScope.deleteSliderImage = function(id) {
   if (!confirm('해당 배경 이미지를 삭제하시겠습니까?')) return;
   let sliderData = [];
   try {
@@ -2284,11 +2284,11 @@ function renderAdminPopup() {
   }
 }
 
-globalScope.parseYoutubeEmbedUrl = parseYoutubeEmbedUrl;
-globalScope.checkAndShowPopup = checkAndShowPopup;
-globalScope.initPopupEvents = initPopupEvents;
-globalScope.renderAdminPopup = renderAdminPopup;
-globalScope.isValidUrl = isValidUrl;
+appGlobalScope.parseYoutubeEmbedUrl = parseYoutubeEmbedUrl;
+appGlobalScope.checkAndShowPopup = checkAndShowPopup;
+appGlobalScope.initPopupEvents = initPopupEvents;
+appGlobalScope.renderAdminPopup = renderAdminPopup;
+appGlobalScope.isValidUrl = isValidUrl;
 
 
 
