@@ -308,6 +308,7 @@ function renderWriteForm() {
   if (!detailColumn) return;
 
   const loggedInUser = (typeof currentUser !== 'undefined') ? currentUser : null;
+  const hasQuill = typeof window !== 'undefined' && typeof window.Quill !== 'undefined';
 
   detailColumn.innerHTML = `
     <h3 class="post-detail-title-h3">새 글 작성</h3>
@@ -322,7 +323,12 @@ function renderWriteForm() {
       </div>
       <div class="fanzone-form-group">
         <label for="postContent">내용</label>
-        <textarea id="postContent" class="fanzone-textarea" placeholder="내용을 입력하세요" required></textarea>
+        ${hasQuill ? `
+          <div id="boardEditorContainer" style="height: 250px; background: rgba(0,0,0,0.2); border: 1px solid var(--color-glass-border); border-radius: 6px; color: #fff;"></div>
+          <input type="hidden" id="postContent" value="">
+        ` : `
+          <textarea id="postContent" class="fanzone-textarea" placeholder="내용을 입력하세요" required style="height: 200px;"></textarea>
+        `}
       </div>
       <div class="form-actions">
         <button type="button" id="btnCancelWrite" class="btn btn-secondary">취소</button>
@@ -330,6 +336,25 @@ function renderWriteForm() {
       </div>
     </form>
   `;
+
+  let boardQuill = null;
+  if (hasQuill) {
+    const editorDiv = detailColumn.querySelector('#boardEditorContainer');
+    if (editorDiv) {
+      boardQuill = new window.Quill('#boardEditorContainer', {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['blockquote'],
+            ['link'],
+            ['clean']
+          ]
+        }
+      });
+    }
+  }
 
   const cancelBtn = detailColumn.querySelector('#btnCancelWrite');
   if (cancelBtn) {
@@ -340,8 +365,32 @@ function renderWriteForm() {
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const title = detailColumn.querySelector('#postTitle').value;
-      const content = detailColumn.querySelector('#postContent').value;
+      const title = detailColumn.querySelector('#postTitle').value.trim();
+      
+      let content = '';
+      if (boardQuill) {
+        const textVal = boardQuill.getText().trim();
+        const htmlVal = boardQuill.root.innerHTML;
+        if (textVal.length === 0 && !htmlVal.includes('<a')) {
+          alert('내용을 입력해 주세요.');
+          return;
+        }
+        content = sanitizeHTML(htmlVal);
+      } else {
+        const textEl = detailColumn.querySelector('#postContent');
+        content = textEl ? textEl.value.trim() : '';
+        if (!content) {
+          alert('내용을 입력해 주세요.');
+          return;
+        }
+        content = sanitizeHTML(content);
+      }
+
+      if (!title || !content) {
+        alert('모든 필드를 입력해 주세요.');
+        return;
+      }
+
       const currentUserObj = (typeof currentUser !== 'undefined') ? currentUser : null;
 
       const newPost = manager.createPost(title, content, currentUserObj);
@@ -377,7 +426,7 @@ function renderPostDetail(postId) {
         <span>📅 ${post.createdAt}</span>
       </div>
     </div>
-    <div class="post-detail-content">${escapeHTML(post.content)}</div>
+    <div class="post-detail-content">${sanitizeHTML(post.content)}</div>
     
     <div class="post-actions">
       <button id="btnLikePost" class="btn btn-gold">👍 추천 <span id="likeCount">${post.likes}</span></button>

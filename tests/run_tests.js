@@ -1480,6 +1480,64 @@ function runAdminNewsQuillTests() {
   }
 }
 
+function runCommunityQuillTests() {
+  const fs = require('fs');
+  const path = require('path');
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  
+  let appendedHTML = '';
+  const mockContainer = {
+    set innerHTML(val) { appendedHTML = val; },
+    get innerHTML() { return appendedHTML; },
+    querySelector: (sel) => {
+      return { value: '', addEventListener: () => {}, style: {} };
+    }
+  };
+  
+  global.document = {
+    addEventListener: () => {},
+    getElementById: (id) => {
+      if (id === 'boardDetailColumn') return mockContainer;
+      return { value: '', addEventListener: () => {}, style: {} };
+    },
+    createElement: () => ({ setAttribute: () => {}, style: {} }),
+    querySelectorAll: () => [],
+    querySelector: (sel) => {
+      return { value: '', addEventListener: () => {}, style: {} };
+    }
+  };
+  
+  try {
+    const communityJsPath = path.join(__dirname, '../js/community.js');
+    const communityJsCode = fs.readFileSync(communityJsPath, 'utf8') + `
+      global.renderWriteForm = renderWriteForm;
+    `;
+    eval(communityJsCode);
+
+    // Case A: Quill 존재 시 자유게시판 에디터 컨테이너 렌더링 검증
+    global.window = {
+      Quill: class {
+        constructor(selector, options) {
+          this.root = { innerHTML: '' };
+          // 라이트 툴바에 'image'가 없는지 검사
+          const toolbar = options.modules.toolbar;
+          const hasImage = toolbar.flat().includes('image');
+          assert.strictEqual(hasImage, false, 'User board editor toolbar must not contain image upload');
+        }
+        getText() { return ''; }
+      }
+    };
+    
+    global.renderWriteForm();
+    assert.ok(appendedHTML.includes('id="boardEditorContainer"'), 'Render user board editor container');
+  } finally {
+    global.document = originalDocument;
+    global.window = originalWindow;
+    delete global.renderWriteForm;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1499,6 +1557,7 @@ runTestBlock('Main Slider & Popup Integration Tests (runMainSliderAndPopupTests)
 runTestBlock('Sanitize HTML Safety Tests (runSanitizeHTMLTests)', runSanitizeHTMLTests);
 runTestBlock('News Sorting Tests (runNewsSortingTests)', runNewsSortingTests);
 runTestBlock('Admin News Quill Tests (runAdminNewsQuillTests)', runAdminNewsQuillTests);
+runTestBlock('Community Quill Tests (runCommunityQuillTests)', runCommunityQuillTests);
 
 
 // Print clean test report
