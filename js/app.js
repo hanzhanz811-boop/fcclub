@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof initCommunity === 'function') {
     initCommunity();
   }
+  if (typeof initPopupEvents === 'function') {
+    initPopupEvents();
+  }
 });
 
 function initLocalStorageData() {
@@ -165,6 +168,9 @@ function switchTab(tabId) {
   // 탭별 추가 액션
   if (tabId === 'home') {
     initMainSlider();
+    if (typeof checkAndShowPopup === 'function') {
+      checkAndShowPopup();
+    }
   }
   if (tabId === 'fanzone' && typeof window.renderCommunity === 'function') {
     window.renderCommunity();
@@ -570,6 +576,24 @@ function bindAdminFeatures() {
     tabList.appendChild(li);
   }
 
+  // Add popup tab button dynamically if not exists
+  if (tabList && !document.getElementById('admin-tab-popup')) {
+    const li = document.createElement('li');
+    li.setAttribute('role', 'presentation');
+    
+    const btn = document.createElement('button');
+    btn.className = 'admin-nav-btn';
+    btn.id = 'admin-tab-popup';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', 'false');
+    btn.setAttribute('aria-controls', 'adminWorkContent');
+    btn.setAttribute('data-admin-tab', 'popup');
+    btn.textContent = '팝업 환경 설정';
+    
+    li.appendChild(btn);
+    tabList.appendChild(li);
+  }
+
   const adminTabBtns = document.querySelectorAll('.admin-nav-btn[data-admin-tab]');
   adminTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -746,6 +770,8 @@ function renderAdminDashboard() {
     renderAdminMembers();
   } else if (activeAdminTab === 'slider') {
     renderAdminSlider();
+  } else if (activeAdminTab === 'popup') {
+    renderAdminPopup();
   }
 }
 
@@ -1902,5 +1928,284 @@ globalScope.deleteSliderImage = function(id) {
   renderAdminSlider();
   initMainSlider();
 };
+
+function parseYoutubeEmbedUrl(url) {
+  if (!url) return '';
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+  return url;
+}
+
+function checkAndShowPopup() {
+  // 24시간 닫기 타임스탬프 체크
+  const hideUntil = localStorage.getItem('popup_hide_until');
+  if (hideUntil && Date.now() < Number(hideUntil)) {
+    return; // 노출 차단 기간 중임
+  }
+
+  // 팝업 설정 로드
+  let popupConfig = null;
+  try {
+    popupConfig = JSON.parse(localStorage.getItem('mainPopupData'));
+  } catch (e) {
+    popupConfig = null;
+  }
+
+  if (!popupConfig || !popupConfig.active) {
+    return; // 비활성 상태
+  }
+
+  const overlay = document.getElementById('mainNoticePopup');
+  const title = document.getElementById('popupTitle');
+  const body = document.getElementById('popupBodyContent');
+  if (!overlay || !body) return;
+
+  title.textContent = escapeHTML(popupConfig.title || 'SUNGMAN FC 공지');
+  body.innerHTML = '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'main-popup-media-wrapper';
+
+  if (popupConfig.type === 'image') {
+    const img = document.createElement('img');
+    img.src = escapeHTML(popupConfig.mediaUrl);
+    img.alt = escapeHTML(popupConfig.title) + ' 이미지 공지';
+    img.className = 'main-popup-img';
+    // 이미지 클릭 시 링크 이동 (존재하는 경우)
+    if (popupConfig.link) {
+      const anchor = document.createElement('a');
+      anchor.href = escapeHTML(popupConfig.link);
+      anchor.target = '_blank';
+      anchor.appendChild(img);
+      wrapper.appendChild(anchor);
+    } else {
+      wrapper.appendChild(img);
+    }
+  } else {
+    const videoContainer = document.createElement('div');
+    videoContainer.className = 'main-popup-video-container';
+    
+    const parsedUrl = parseYoutubeEmbedUrl(popupConfig.mediaUrl);
+    if (parsedUrl.includes('youtube.com/embed/')) {
+      const iframe = document.createElement('iframe');
+      iframe.src = escapeHTML(parsedUrl);
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.allowFullscreen = true;
+      videoContainer.appendChild(iframe);
+    } else {
+      const video = document.createElement('video');
+      video.src = escapeHTML(popupConfig.mediaUrl);
+      video.controls = true;
+      video.autoplay = true;
+      video.muted = true;
+      video.loop = true;
+      videoContainer.appendChild(video);
+    }
+    wrapper.appendChild(videoContainer);
+  }
+
+  body.appendChild(wrapper);
+  overlay.classList.add('is-visible');
+}
+
+function initPopupEvents() {
+  const overlay = document.getElementById('mainNoticePopup');
+  const closeBtn = document.getElementById('btnCloseNoticePopup');
+  const chk24h = document.getElementById('chkHidePopup24h');
+  if (!overlay || !closeBtn) return;
+
+  closeBtn.addEventListener('click', () => {
+    if (chk24h && chk24h.checked) {
+      // 현재 시간 기준 24시간 뒤의 타임스탬프 계산 및 기록
+      const expiry = Date.now() + 24 * 60 * 60 * 1000;
+      localStorage.setItem('popup_hide_until', String(expiry));
+    }
+    overlay.classList.remove('is-visible');
+  });
+}
+
+function renderAdminPopup() {
+  const parent = document.getElementById('adminWorkContent');
+  if (!parent) return;
+
+  parent.innerHTML = '<div id="adminPopupContent"></div>';
+  const container = document.getElementById('adminPopupContent');
+  if (!container) return;
+
+  let popupConfig = { active: false, type: 'image', title: '', mediaUrl: '', link: '' };
+  try {
+    const raw = localStorage.getItem('mainPopupData');
+    if (raw) popupConfig = { ...popupConfig, ...JSON.parse(raw) };
+  } catch (e) {
+    // 기본값 사용
+  }
+
+  container.innerHTML = `
+    <h4 style="color: var(--color-gold-solid); margin-bottom: 15px;">메인 팝업 노출 및 미디어 관리</h4>
+    <form id="adminPopupConfigForm" style="display: flex; flex-direction: column; gap: 15px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+        <input type="checkbox" id="popupActive" ${popupConfig.active ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
+        <label for="popupActive" style="font-weight: bold; cursor: pointer;">메인 페이지 팝업 띄우기 (활성화)</label>
+      </div>
+      
+      <div class="admin-form-group">
+        <label for="popupTitleInput">팝업 제목 (공지명)</label>
+        <input type="text" id="popupTitleInput" required value="${escapeHTML(popupConfig.title || '')}" placeholder="예: SUNGMAN FC 특별 공지">
+      </div>
+
+      <div class="admin-form-group">
+        <label>팝업 콘텐츠 미디어 형식</label>
+        <div style="display: flex; gap: 20px; margin-top: 5px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="radio" name="popupType" value="image" ${popupConfig.type === 'image' ? 'checked' : ''} style="cursor: pointer;"> 이미지
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="radio" name="popupType" value="video" ${popupConfig.type === 'video' ? 'checked' : ''} style="cursor: pointer;"> 동영상 (비디오)
+          </label>
+        </div>
+      </div>
+
+      <!-- 이미지 설정 영역 -->
+      <div id="popupImageFieldArea" style="display: ${popupConfig.type === 'image' ? 'block' : 'none'}; border: 1px dashed var(--color-glass-border); padding: 15px; border-radius: 6px; background: rgba(0,0,0,0.1);">
+        <div class="admin-form-group">
+          <label>공지 이미지 등록 (파일 선택 또는 이미지 URL 입력)</label>
+          <div style="display: flex; gap: 15px; align-items: center; margin-top: 5px; margin-bottom: 10px;">
+            <div id="adminPopupImgPreview" style="width: 100px; height: 100px; border-radius: 6px; border: 1px solid var(--color-glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,0.3); flex-shrink: 0;">
+              <span style="font-size: 11px; color: var(--color-text-muted);">미리보기</span>
+            </div>
+            <div style="flex: 1;">
+              <input type="file" id="popupImageFile" accept="image/*" style="display: none;" aria-label="팝업 이미지 파일 선택">
+              <button type="button" class="btn btn-outline btn-sm" id="btnTriggerPopupImgUpload">파일 업로드</button>
+              <p style="font-size: 11px; color: var(--color-text-muted); margin-top: 5px; margin-bottom: 0;">1.5MB 이하의 파일만 업로드할 수 있습니다.</p>
+            </div>
+          </div>
+          <label for="popupImageUrlInput" style="font-size: 12px; margin-top: 10px;">또는 외부 이미지 주소(URL)</label>
+          <input type="text" id="popupImageUrlInput" value="${popupConfig.type === 'image' ? escapeHTML(popupConfig.mediaUrl) : ''}" placeholder="예: https://example.com/image.jpg" style="margin-top: 5px;">
+        </div>
+        
+        <div class="admin-form-group" style="margin-top: 15px;">
+          <label for="popupLinkInput">이미지 클릭 시 이동할 링크 URL (선택사항)</label>
+          <input type="text" id="popupLinkInput" value="${escapeHTML(popupConfig.link || '')}" placeholder="https://example.com/event">
+        </div>
+      </div>
+
+      <!-- 동영상 설정 영역 -->
+      <div id="popupVideoFieldArea" style="display: ${popupConfig.type === 'video' ? 'block' : 'none'}; border: 1px dashed var(--color-glass-border); padding: 15px; border-radius: 6px; background: rgba(0,0,0,0.1);">
+        <div class="admin-form-group">
+          <label for="popupVideoUrlInput">동영상 재생 주소 (유튜브 링크 또는 mp4 URL)</label>
+          <input type="text" id="popupVideoUrlInput" value="${popupConfig.type === 'video' ? escapeHTML(popupConfig.mediaUrl) : ''}" placeholder="예: https://www.youtube.com/watch?v=영상ID 또는 https://example.com/video.mp4" style="margin-top: 5px;">
+          <p style="font-size: 11px; color: var(--color-text-muted); margin-top: 5px; margin-bottom: 0;">* 유튜브 주소는 공유 링크, 일반 주소 등을 넣으면 모달에서 자동으로 임베드 주소로 변환되어 적용됩니다.</p>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-gold" style="margin-top: 10px;">팝업 환경 설정 저장</button>
+    </form>
+  `;
+
+  // DOM 제어 맵핑
+  const imgField = document.getElementById('popupImageFieldArea');
+  const vidField = document.getElementById('popupVideoFieldArea');
+  const radios = document.getElementsByName('popupType');
+  const fileInput = document.getElementById('popupImageFile');
+  const triggerBtn = document.getElementById('btnTriggerPopupImgUpload');
+  const previewDiv = document.getElementById('adminPopupImgPreview');
+  const urlInput = document.getElementById('popupImageUrlInput');
+  const form = document.getElementById('adminPopupConfigForm');
+  
+  let loadedImageData = (popupConfig.type === 'image' && popupConfig.mediaUrl.startsWith('data:image/')) ? popupConfig.mediaUrl : '';
+
+  // 초기 렌더링 시 미리보기 채우기
+  if (popupConfig.type === 'image' && popupConfig.mediaUrl) {
+    previewDiv.innerHTML = `<img src="${escapeHTML(popupConfig.mediaUrl)}" style="width: 100%; height: 100%; object-fit: contain;">`;
+  }
+
+  radios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if (e.target.value === 'image') {
+        imgField.style.display = 'block';
+        vidField.style.display = 'none';
+      } else {
+        imgField.style.display = 'none';
+        vidField.style.display = 'block';
+      }
+    });
+  });
+
+  if (triggerBtn && fileInput) {
+    triggerBtn.addEventListener('click', () => fileInput.click());
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          alert('이미지 파일만 업로드할 수 있습니다.');
+          fileInput.value = '';
+          return;
+        }
+        if (file.size > 1500000) {
+          alert('1.5MB 이하의 이미지만 업로드 가능합니다.');
+          fileInput.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          loadedImageData = event.target.result;
+          if (urlInput) urlInput.value = ''; // URL 텍스트 필드 클리어
+          previewDiv.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = loadedImageData;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'contain';
+          previewDiv.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const active = document.getElementById('popupActive').checked;
+      const title = document.getElementById('popupTitleInput').value.trim();
+      const selectedType = Array.from(radios).find(r => r.checked).value;
+      let mediaUrl = '';
+      let link = '';
+
+      if (selectedType === 'image') {
+        mediaUrl = loadedImageData || (urlInput ? urlInput.value.trim() : '');
+        link = document.getElementById('popupLinkInput').value.trim();
+        if (!mediaUrl) {
+          alert('팝업에 띄울 이미지를 업로드하거나 외부 주소를 적어 주세요.');
+          return;
+        }
+      } else {
+        mediaUrl = document.getElementById('popupVideoUrlInput').value.trim();
+        if (!mediaUrl) {
+          alert('팝업에 띄울 동영상 주소(URL)를 입력해 주세요.');
+          return;
+        }
+      }
+
+      const config = { active, type: selectedType, title, mediaUrl, link };
+      localStorage.setItem('mainPopupData', JSON.stringify(config));
+      alert('팝업 설정이 저장되었습니다.');
+      
+      renderAdminPopup();
+    });
+  }
+}
+
+globalScope.parseYoutubeEmbedUrl = parseYoutubeEmbedUrl;
+globalScope.checkAndShowPopup = checkAndShowPopup;
+globalScope.initPopupEvents = initPopupEvents;
+globalScope.renderAdminPopup = renderAdminPopup;
+
 
 

@@ -967,6 +967,119 @@ function runMainSliderTests() {
   }
 }
 
+function runMainSliderAndPopupTests() {
+  const fs = require('fs');
+  const path = require('path');
+
+  localStorage.clear();
+
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  const originalAlert = global.alert;
+
+  let alertMessage = '';
+  global.alert = (msg) => {
+    alertMessage = msg;
+  };
+
+  // Mock Document & Window
+  let mockNoticePopup = {
+    classList: {
+      add: (cls) => { mockNoticePopup.isVisible = true; },
+      remove: (cls) => { mockNoticePopup.isVisible = false; }
+    },
+    isVisible: false
+  };
+  let mockPopupTitle = { textContent: '' };
+  let mockPopupBody = {
+    innerHTML: '',
+    appendChild: (el) => {
+      mockPopupBody.childElement = el;
+    },
+    childElement: null
+  };
+
+  global.document = {
+    getElementById: (id) => {
+      if (id === 'mainNoticePopup') return mockNoticePopup;
+      if (id === 'popupTitle') return mockPopupTitle;
+      if (id === 'popupBodyContent') return mockPopupBody;
+      return {
+        value: '',
+        addEventListener: () => {},
+        style: {}
+      };
+    },
+    createElement: (tag) => {
+      return {
+        tagName: tag.toUpperCase(),
+        style: {},
+        setAttribute: () => {},
+        appendChild: () => {}
+      };
+    },
+    addEventListener: () => {},
+    querySelectorAll: () => [],
+    querySelector: () => null
+  };
+
+  global.window = {
+    addEventListener: () => {}
+  };
+
+  try {
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.parseYoutubeEmbedUrl = parseYoutubeEmbedUrl;
+      global.checkAndShowPopup = checkAndShowPopup;
+    `;
+    eval(appJsCode);
+
+    // Test 1: 유튜브 URL 정규식 치환 기능 검증
+    const rawUrl1 = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    const parsedUrl1 = global.parseYoutubeEmbedUrl(rawUrl1);
+    assert.strictEqual(parsedUrl1, 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'Standard Youtube URL should convert to embed URL');
+
+    const rawUrl2 = 'https://youtu.be/dQw4w9WgXcQ';
+    const parsedUrl2 = global.parseYoutubeEmbedUrl(rawUrl2);
+    assert.strictEqual(parsedUrl2, 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'Short Youtube URL should convert to embed URL');
+
+    // Test 2: 팝업 미노출 (active: false인 경우)
+    localStorage.setItem('mainPopupData', JSON.stringify({ active: false }));
+    mockNoticePopup.isVisible = false;
+    global.checkAndShowPopup();
+    assert.strictEqual(mockNoticePopup.isVisible, false, 'Popup should not be visible when active is false');
+
+    // Test 3: 팝업 노출 (active: true이고 오늘하루닫기 만료 상태)
+    localStorage.setItem('mainPopupData', JSON.stringify({
+      active: true,
+      type: 'image',
+      title: '신규 이벤트',
+      mediaUrl: 'data:image/png;base64,abcdef',
+      link: 'https://sungman.com'
+    }));
+    mockNoticePopup.isVisible = false;
+    global.checkAndShowPopup();
+    assert.strictEqual(mockNoticePopup.isVisible, true, 'Popup should show when active is true');
+    assert.strictEqual(mockPopupTitle.textContent, '신규 이벤트', 'Title should match configuration');
+    
+    // Test 4: 팝업 노출 차단 (오늘 하루 보지 않기 타임스탬프가 미래 시점인 경우)
+    const futureTime = Date.now() + 10000;
+    localStorage.setItem('popup_hide_until', String(futureTime));
+    mockNoticePopup.isVisible = false;
+    global.checkAndShowPopup();
+    assert.strictEqual(mockNoticePopup.isVisible, false, 'Popup should not show if popup_hide_until is in the future');
+
+  } finally {
+    // Clean up
+    global.document = originalDocument;
+    global.window = originalWindow;
+    global.alert = originalAlert;
+    delete global.parseYoutubeEmbedUrl;
+    delete global.checkAndShowPopup;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -982,6 +1095,7 @@ runTestBlock('Admin Member Management Dashboard Tests (runAdminMembersDashboardT
 runTestBlock('Squad Form Image Preview and Validation Tests (runSquadFormImageTests)', runSquadFormImageTests);
 runTestBlock('Player Image Integration Tests (runPlayerImageIntegrationTests)', runPlayerImageIntegrationTests);
 runTestBlock('Main Slider Unit & Integration Tests (runMainSliderTests)', runMainSliderTests);
+runTestBlock('Main Slider & Popup Integration Tests (runMainSliderAndPopupTests)', runMainSliderAndPopupTests);
 
 
 // Print clean test report
