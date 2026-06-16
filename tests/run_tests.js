@@ -11,7 +11,106 @@ if (typeof global.localStorage === 'undefined') {
   };
 }
 
-const { CommunityManager, escapeHTML } = require('../js/community.js');
+global.DOMParser = class {
+  parseFromString(html, type) {
+    const elements = [];
+    const tagRegex = /<([a-z1-6]+)([^>]*?)>(.*?)<\/\1>|<([a-z1-6]+)([^>]*?)\/?>/gi;
+    let match;
+    while ((match = tagRegex.exec(html)) !== null) {
+      const tagName = (match[1] || match[4]).toUpperCase();
+      const rawAttrs = match[2] || match[5] || '';
+      const innerHTML = match[3] || '';
+      
+      const attributes = {};
+      Object.defineProperty(attributes, 'length', {
+        value: 0,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      });
+      
+      const attrRegex = /(\w+)\s*=\s*["']([^"']*)["']/g;
+      let attrMatch;
+      let index = 0;
+      while ((attrMatch = attrRegex.exec(rawAttrs)) !== null) {
+        const name = attrMatch[1];
+        const value = attrMatch[2];
+        Object.defineProperty(attributes, index, {
+          value: { name, value },
+          writable: true,
+          enumerable: false,
+          configurable: true
+        });
+        attributes[name] = value;
+        index++;
+      }
+      attributes.length = index;
+      
+      const el = {
+        tagName,
+        innerHTML,
+        attributes,
+        isRemoved: false,
+        remove() { this.isRemoved = true; },
+        getAttribute(name) { return this.attributes[name] || null; },
+        removeAttribute(name) {
+          delete this.attributes[name];
+          const list = [];
+          for (let idx = 0; idx < this.attributes.length; idx++) {
+            const item = this.attributes[idx];
+            if (item && item.name !== name) {
+              list.push(item);
+            }
+            delete this.attributes[idx];
+          }
+          list.forEach((item, idx) => {
+            Object.defineProperty(this.attributes, idx, {
+              value: item,
+              writable: true,
+              enumerable: false,
+              configurable: true
+            });
+          });
+          this.attributes.length = list.length;
+        }
+      };
+      elements.push(el);
+    }
+    
+    const body = {
+      querySelectorAll: (selector) => {
+        if (selector.includes('script')) {
+          return elements.filter(el => ['SCRIPT', 'OBJECT', 'EMBED', 'LINK', 'META', 'STYLE'].includes(el.tagName));
+        }
+        if (selector === 'iframe') {
+          return elements.filter(el => el.tagName === 'IFRAME');
+        }
+        if (selector === '*') {
+          return elements;
+        }
+        return [];
+      },
+      get innerHTML() {
+        return elements.map(el => {
+          if (el.isRemoved) return '';
+          let attrs = '';
+          for (let k in el.attributes) {
+            attrs += ` ${k}="${el.attributes[k]}"`;
+          }
+          if (['IMG', 'IFRAME'].includes(el.tagName)) {
+            return `<${el.tagName.toLowerCase()}${attrs}>${el.innerHTML || ''}</${el.tagName.toLowerCase()}>`;
+          }
+          return `<${el.tagName.toLowerCase()}${attrs}>${el.innerHTML || ''}</${el.tagName.toLowerCase()}>`;
+        }).join('');
+      }
+    };
+    
+    return { body };
+  }
+};
+
+const { CommunityManager, escapeHTML, sanitizeHTML } = require('../js/community.js');
+global.sanitizeHTML = sanitizeHTML;
 
 console.log('=== SUNGMAN FC DATA TEST SUITE ===\n');
 
@@ -248,6 +347,32 @@ function runEscapeHTMLTests() {
   assert.strictEqual(escapeHTML(false), 'false');
   assert.strictEqual(escapeHTML(null), '');
   assert.strictEqual(escapeHTML(undefined), '');
+}
+
+function runSanitizeHTMLTests() {
+  // 1. script tag blocking
+  const payload1 = '<p>안녕</p><script>alert("xss")<\/script><div>하세요</div>';
+  const clean1 = sanitizeHTML(payload1);
+  assert.strictEqual(clean1.includes('<script>'), false, 'Should remove script tags');
+  assert.strictEqual(clean1.includes('안녕'), true);
+  assert.strictEqual(clean1.includes('하세요'), true);
+
+  // 2. inline event handler removal
+  const payload2 = '<img src="x" onerror="alert(1)" onclick="console.log(2)" alt="test">';
+  const clean2 = sanitizeHTML(payload2);
+  assert.strictEqual(clean2.includes('onerror'), false, 'Should remove onerror attribute');
+  assert.strictEqual(clean2.includes('onclick'), false, 'Should remove onclick attribute');
+  assert.strictEqual(clean2.includes('alt="test"'), true);
+
+  // 3. javascript: protocol removal
+  const payload3 = '<a href="javascript:alert(1)">클릭</a><iframe src="javascript:alert(2)"></iframe>';
+  const clean3 = sanitizeHTML(payload3);
+  assert.strictEqual(clean3.includes('javascript:'), false, 'Should remove javascript: protocol');
+
+  // 4. allowed youtube iframe preservation
+  const payload4 = '<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" width="560"></iframe>';
+  const clean4 = sanitizeHTML(payload4);
+  assert.strictEqual(clean4.includes('https://www.youtube.com/embed/dQw4w9WgXcQ'), true, 'Should allow youtube embed src');
 }
 
 function runUserDataInitializationTests() {
@@ -1161,6 +1286,7 @@ runTestBlock('Squad Form Image Preview and Validation Tests (runSquadFormImageTe
 runTestBlock('Player Image Integration Tests (runPlayerImageIntegrationTests)', runPlayerImageIntegrationTests);
 runTestBlock('Main Slider Unit & Integration Tests (runMainSliderTests)', runMainSliderTests);
 runTestBlock('Main Slider & Popup Integration Tests (runMainSliderAndPopupTests)', runMainSliderAndPopupTests);
+runTestBlock('Sanitize HTML Safety Tests (runSanitizeHTMLTests)', runSanitizeHTMLTests);
 
 
 // Print clean test report

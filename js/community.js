@@ -161,8 +161,11 @@ class CommunityManager {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CommunityManager, escapeHTML };
+  module.exports = { CommunityManager, escapeHTML, sanitizeHTML };
 }
+
+const globalScope = typeof window !== 'undefined' ? window : global;
+globalScope.sanitizeHTML = sanitizeHTML;
 
 // HTML Escaping Utility for XSS Prevention
 function escapeHTML(str) {
@@ -177,6 +180,57 @@ function escapeHTML(str) {
       '"': '&quot;'
     }[tag] || tag)
   );
+}
+
+function sanitizeHTML(html) {
+  if (!html) return '';
+  
+  let doc;
+  if (typeof window === 'undefined' || !window.DOMParser) {
+    if (typeof global.DOMParser !== 'undefined') {
+      const parser = new global.DOMParser();
+      doc = parser.parseFromString(html, 'text/html');
+    } else {
+      return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    }
+  } else {
+    const parser = new window.DOMParser();
+    doc = parser.parseFromString(html, 'text/html');
+  }
+  
+  const body = doc.body;
+
+  // 1. Remove bad tags
+  const badTags = body.querySelectorAll('script, object, embed, link, meta, style');
+  badTags.forEach(t => t.remove());
+
+  // 2. Allow only youtube embed iframe
+  const iframes = body.querySelectorAll('iframe');
+  iframes.forEach(iframe => {
+    const src = iframe.getAttribute('src') || '';
+    if (!src.startsWith('https://www.youtube.com/embed/') && !src.startsWith('https://www.youtube-nocookie.com/embed/')) {
+      iframe.remove();
+    }
+  });
+
+  // 3. Attribute inspection (on-* events and javascript: protocol)
+  const allElements = body.querySelectorAll('*');
+  allElements.forEach(el => {
+    for (let i = el.attributes.length - 1; i >= 0; i--) {
+      const attr = el.attributes[i];
+      if (attr.name.toLowerCase().startsWith('on')) {
+        el.removeAttribute(attr.name);
+      }
+      if (attr.name.toLowerCase() === 'href' || attr.name.toLowerCase() === 'src') {
+        const val = attr.value.trim().toLowerCase();
+        if (val.startsWith('javascript:')) {
+          el.removeAttribute(attr.name);
+        }
+      }
+    }
+  });
+
+  return body.innerHTML;
 }
 
 // UI 바인딩 및 이벤트 연결 (Fan Zone UI 기능 완성)
