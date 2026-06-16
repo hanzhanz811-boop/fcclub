@@ -1336,6 +1336,92 @@ function runMainSliderAndPopupTests() {
   }
 }
 
+function runNewsSortingTests() {
+  const fs = require('fs');
+  const path = require('path');
+  const originalDocument = global.document;
+  
+
+  
+  const renderedTitles = [];
+  const mockContainer = {
+    innerHTML: '',
+    appendChild: (child) => {
+      const titleEl = child.querySelector('.news-title') || child.querySelector('.news-item-title');
+      if (titleEl) renderedTitles.push(titleEl.textContent);
+    },
+    querySelectorAll: () => []
+  };
+  
+  global.document = {
+    addEventListener: () => {},
+    getElementById: (id) => {
+      if (id === 'newsListContainer' || id === 'newsTabList') return mockContainer;
+      return { innerHTML: '', appendChild: () => {}, querySelectorAll: () => [] };
+    },
+    createElement: (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        _innerHTML: '',
+        set innerHTML(val) { el._innerHTML = val; },
+        get innerHTML() { return el._innerHTML; },
+        querySelector: (sel) => {
+          const cls = sel.replace('.', '');
+          const regex = new RegExp(`class=["']${cls}["'][^>]*>([^<]*)<\/`, 'i');
+          const match = el._innerHTML.match(regex);
+          if (!match) return null;
+          return {
+            textContent: match[1],
+            addEventListener: () => {}
+          };
+        },
+        setAttribute: () => {},
+        addEventListener: () => {}
+      };
+      return el;
+    }
+  };
+  
+  try {
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.bindNewsWidget = bindNewsWidget;
+      global.renderNewsPage = renderNewsPage;
+      Object.defineProperty(global, "newsList", {
+        get: () => newsList,
+        set: (val) => { newsList = val; },
+        configurable: true
+      });
+      Object.defineProperty(global, "activeNewsId", {
+        get: () => activeNewsId,
+        set: (val) => { activeNewsId = val; },
+        configurable: true
+      });
+    `;
+    eval(appJsCode);
+
+    // Set the mock newsList values
+    global.newsList = [
+      { id: 1, date: '2026-06-01', title: '옛날 뉴스', content: '옛날 뉴스 본문' },
+      { id: 2, date: '2026-06-02', title: '최신 뉴스', content: '최신 뉴스 본문' }
+    ];
+
+    global.bindNewsWidget();
+    assert.strictEqual(renderedTitles[0], '최신 뉴스', 'Main widget should render newest news first');
+    
+    renderedTitles.length = 0;
+    global.renderNewsPage();
+    assert.strictEqual(renderedTitles[0], '최신 뉴스', 'News tab list should render newest news first');
+    assert.strictEqual(global.activeNewsId, 2, 'Default active news should be the newest news');
+  } finally {
+    global.document = originalDocument;
+    delete global.newsList;
+    delete global.activeNewsId;
+    delete global.bindNewsWidget;
+    delete global.renderNewsPage;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1353,6 +1439,7 @@ runTestBlock('Player Image Integration Tests (runPlayerImageIntegrationTests)', 
 runTestBlock('Main Slider Unit & Integration Tests (runMainSliderTests)', runMainSliderTests);
 runTestBlock('Main Slider & Popup Integration Tests (runMainSliderAndPopupTests)', runMainSliderAndPopupTests);
 runTestBlock('Sanitize HTML Safety Tests (runSanitizeHTMLTests)', runSanitizeHTMLTests);
+runTestBlock('News Sorting Tests (runNewsSortingTests)', runNewsSortingTests);
 
 
 // Print clean test report

@@ -427,7 +427,8 @@ function bindNewsWidget() {
   if (!container) return;
 
   container.innerHTML = '';
-  newsList.forEach(news => {
+  const sortedNews = [...newsList].sort((a, b) => b.id - a.id);
+  sortedNews.forEach(news => {
     const item = document.createElement('div');
     item.className = 'news-item';
     item.innerHTML = `
@@ -458,18 +459,20 @@ function renderNewsPage() {
   const detailContainer = document.getElementById('newsDetailColumn');
   if (!listContainer || !detailContainer) return;
 
+  const sortedNews = [...newsList].sort((a, b) => b.id - a.id);
+
   if (newsList.length > 0) {
     const exists = newsList.some(news => news.id === activeNewsId);
     if (!exists) {
-      activeNewsId = newsList[0].id;
+      activeNewsId = sortedNews[0].id;
     }
   }
 
   // Render news list
   const existingCards = listContainer.querySelectorAll('.news-item-card');
-  if (existingCards.length === newsList.length) {
+  if (existingCards.length === sortedNews.length) {
     existingCards.forEach((card, index) => {
-      const news = newsList[index];
+      const news = sortedNews[index];
       const titleEl = card.querySelector('.news-item-title');
       const dateSpan = card.querySelector('.news-item-meta span');
       if (titleEl) titleEl.textContent = news.title;
@@ -485,7 +488,7 @@ function renderNewsPage() {
     });
   } else {
     listContainer.innerHTML = '';
-    newsList.forEach(news => {
+    sortedNews.forEach(news => {
       const card = document.createElement('div');
       card.className = `news-item-card${news.id === activeNewsId ? ' active' : ''}`;
       card.setAttribute('data-id', news.id);
