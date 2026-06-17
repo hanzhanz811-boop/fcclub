@@ -255,10 +255,10 @@ function renderSquad(positionFilter = 'ALL') {
 
     const imgHtml = isValidImage
       ? `<div class="player-img-wrapper"><img src="${escapeHTML(player.image)}" alt="${escapeHTML(player.name)} 선수 프로필" class="player-img" onerror="this.onerror=null; this.outerHTML='<div class=&quot;player-img-placeholder&quot;>${escapeHTML(String(player.number))}</div>';"></div>`
-      : `<div class="player-img-placeholder">${player.number}</div>`;
+      : `<div class="player-img-placeholder">${escapeHTML(String(player.number))}</div>`;
 
     card.innerHTML = `
-      <div class="player-number-badge">${player.number}</div>
+      <div class="player-number-badge">${escapeHTML(String(player.number))}</div>
       ${imgHtml}
       <div class="player-info">
         <div class="player-name">${escapeHTML(player.name)}</div>
@@ -295,7 +295,7 @@ function openPlayerModal(playerId) {
     <div class="player-modal-header" style="display: flex; gap: 20px; align-items: center;">
       ${imgHtml}
       <div style="flex: 1; display: flex; align-items: center; gap: 20px;">
-        <div class="player-modal-badge" style="font-size: 48px; font-weight: 800; color: var(--color-gold-solid);">${player.number}</div>
+        <div class="player-modal-badge" style="font-size: 48px; font-weight: 800; color: var(--color-gold-solid);">${escapeHTML(String(player.number))}</div>
         <div class="player-modal-meta">
           <h3 id="playerModalTitle" style="font-size: 24px; margin-bottom: 4px;">${escapeHTML(player.name)}</h3>
           <p style="color:var(--color-text-muted); margin: 0;">${escapeHTML(player.engName)} | ${escapeHTML(player.position)}</p>
@@ -1037,7 +1037,7 @@ function renderAdminSquad() {
       html += `
           <tr>
             <td>${thumbnailHtml}</td>
-            <td><strong>${player.number}</strong></td>
+            <td><strong>${escapeHTML(String(player.number))}</strong></td>
             <td style="text-align: left;">
               ${escapeHTML(player.name)}
               <span style="font-size: 12px; color: var(--color-text-muted); margin-left: 5px;">(${escapeHTML(player.engName)})</span>
