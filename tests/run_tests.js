@@ -1696,6 +1696,41 @@ function runMultiPopupCarouselTests() {
   }
 }
 
+function runMatchCalendarTests() {
+  const originalDocument = global.document;
+  let appendedHTML = '';
+  const mockContainer = {
+    set innerHTML(val) { appendedHTML = val; },
+    get innerHTML() { return appendedHTML; }
+  };
+  
+  try {
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'adminWorkContent') return mockContainer;
+        return { value: '', addEventListener: () => {}, style: {} };
+      },
+      createElement: () => ({ setAttribute: () => {}, style: {} }),
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    };
+    
+    const fs = require('fs');
+    const path = require('path');
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.showMatchForm = showMatchForm;
+    `;
+    eval(appJsCode);
+
+    global.showMatchForm();
+    assert.ok(appendedHTML.includes('type="date"'), 'Should render date input type');
+  } finally {
+    global.document = originalDocument;
+    delete global.showMatchForm;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1721,6 +1756,7 @@ runTestBlock('Admin Dashboard Layout Tests (runAdminDashboardLayoutTests)', runA
 runTestBlock('Squad Admin Thumbnail Tests (runSquadThumbnailTests)', runSquadThumbnailTests);
 runTestBlock('Squad Card Badge Tests (runSquadCardBadgeTests)', runSquadCardBadgeTests);
 runTestBlock('Multi Popup Carousel Tests (runMultiPopupCarouselTests)', runMultiPopupCarouselTests);
+runTestBlock('Match Calendar Picker Tests (runMatchCalendarTests)', runMatchCalendarTests);
 
 
 // Print clean test report

@@ -213,7 +213,7 @@ function bindNextMatchWidget() {
     if (infoEl) infoEl.textContent = `${upcomingMatch.date} ${upcomingMatch.time} @ ${upcomingMatch.venue}`;
     
     // D-Day calculation
-    const matchDateObj = new Date(`${upcomingMatch.date}T${upcomingMatch.time}`);
+    const matchDateObj = new Date(`${upcomingMatch.date.replace(/\./g, '-')}T${upcomingMatch.time}`);
     const today = new Date();
     // Reset hours for day-based comparison
     matchDateObj.setHours(0,0,0,0);
@@ -1359,7 +1359,7 @@ function renderAdminMatches() {
           </tr>
     `;
   } else {
-    const sortedMatches = [...matchList].sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
+    const sortedMatches = [...matchList].sort((a, b) => new Date(b.date.replace(/\./g, '-') + 'T' + b.time) - new Date(a.date.replace(/\./g, '-') + 'T' + a.time));
     sortedMatches.forEach(match => {
       let resultText = '';
       if (match.status === 'finished') {
@@ -1432,7 +1432,7 @@ function showMatchForm(matchId = null) {
   const match = isEdit ? matchList.find(m => m.id === matchId) : null;
 
   const opponentVal = isEdit ? match.opponent : '';
-  const dateVal = isEdit ? match.date : '';
+  const dateVal = match ? match.date.replace(/\./g, '-') : '';
   const timeVal = isEdit ? match.time : '19:00';
   const venueVal = isEdit ? match.venue : '성만 아레나';
   const typeVal = isEdit ? match.type : 'Home';
@@ -1458,8 +1458,8 @@ function showMatchForm(matchId = null) {
 
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
         <div class="admin-form-group">
-          <label for="matchFormDate">일자 (YYYY-MM-DD)</label>
-          <input type="text" id="matchFormDate" required value="${escapeHTML(dateVal)}" placeholder="예: 2026-06-20">
+          <label for="matchFormDate">일자</label>
+          <input type="date" id="matchFormDate" required value="${escapeHTML(dateVal)}">
         </div>
         <div class="admin-form-group">
           <label for="matchFormTime">시간 (HH:MM)</label>
@@ -1525,7 +1525,8 @@ function showMatchForm(matchId = null) {
     e.preventDefault();
     const opponent = document.getElementById('matchFormOpponent').value.trim();
     const venue = document.getElementById('matchFormVenue').value.trim();
-    const date = document.getElementById('matchFormDate').value.trim();
+    const rawDate = document.getElementById('matchFormDate').value.trim();
+    const date = rawDate.replace(/-/g, '.');
     const time = document.getElementById('matchFormTime').value.trim();
     const type = document.getElementById('matchFormType').value;
     const status = document.getElementById('matchFormStatus').value;
