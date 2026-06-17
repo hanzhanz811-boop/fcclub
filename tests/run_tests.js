@@ -1538,6 +1538,18 @@ function runCommunityQuillTests() {
   }
 }
 
+function runHeroTextLayerTests() {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const htmlContent = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const cssContent = fs.readFileSync(path.join(__dirname, '../css/components.css'), 'utf8');
+  
+  assert.ok(htmlContent.includes('WE ARE SUNGMAN FC'), 'Main banner text should be SUNGMAN FC');
+  assert.ok(cssContent.includes('z-index: 2'), 'hero-content should have z-index: 2');
+  assert.ok(cssContent.includes('z-index: 1'), 'hero-overlay should have z-index: 1');
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1558,6 +1570,7 @@ runTestBlock('Sanitize HTML Safety Tests (runSanitizeHTMLTests)', runSanitizeHTM
 runTestBlock('News Sorting Tests (runNewsSortingTests)', runNewsSortingTests);
 runTestBlock('Admin News Quill Tests (runAdminNewsQuillTests)', runAdminNewsQuillTests);
 runTestBlock('Community Quill Tests (runCommunityQuillTests)', runCommunityQuillTests);
+runTestBlock('Hero Text & Layer Tests (runHeroTextLayerTests)', runHeroTextLayerTests);
 
 
 // Print clean test report
