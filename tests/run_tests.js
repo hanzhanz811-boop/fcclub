@@ -1830,6 +1830,8 @@ function runPWAFilesTests() {
   assert.ok(swContent.includes('sungmanfc-cache'), 'sw.js should declare a cache name');
   assert.ok(swContent.includes('install'), 'sw.js should listen to install event');
   assert.ok(swContent.includes('activate'), 'sw.js should listen to activate event');
+  assert.ok(swContent.includes('theme.css'), 'sw.js should cache theme.css');
+  assert.ok(swContent.includes('main.css'), 'sw.js should cache main.css');
 }
 
 // Run the test blocks

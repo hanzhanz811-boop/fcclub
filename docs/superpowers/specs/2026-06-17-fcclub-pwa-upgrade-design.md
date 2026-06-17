@@ -50,16 +50,16 @@
 * **파일 위치**: `J:/project/fcclub/sw.js`
 * **캐시명**: `sungmanfc-cache-v1` (배포 및 리소스 갱신 시 v2, v3 등으로 증가)
 * **캐시 리소스 지정**:
-  오프라인 구동 시 필수적으로 메모리에 적재되어야 하는 정적 자산 경로들을 지정합니다.
+  오프라인 구동 시 필수적으로 메모리에 적재되어야 하는 정적 자산 경로들을 지정합니다. (`/assets/logo.png`는 로고가 스타일링된 텍스트로 대체되어 존재하지 않으므로 캐싱 대상에서 제외되었습니다.)
   - `/`
   - `/index.html`
-  - `/css/style.css`
+  - `/css/theme.css`
+  - `/css/main.css`
   - `/css/components.css`
   - `/js/data.js`
   - `/js/community.js`
   - `/js/app.js`
   - `/assets/stadium_bg.png`
-  - `/assets/logo.png`
 * **생명주기(Lifecycle) 핸들링**:
   1. **install**: `ASSETS_TO_CACHE`에 선언된 정적 자산들을 캐싱 공간에 저장하고 `self.skipWaiting()`으로 새 서비스 워커를 즉각 활성화합니다.
   2. **activate**: 새 캐시 명칭이 감지되면 구버전 캐시 공간을 스캔하여 일괄 파기 및 소거하고 `self.clients.claim()`으로 제어권을 확보합니다.
