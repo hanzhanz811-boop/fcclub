@@ -2367,77 +2367,95 @@ function renderAdminPopup() {
 
   if (fileInput) {
     fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        if (!file.type.startsWith('image/')) {
-          alert('이미지 파일만 업로드할 수 있습니다.');
-          fileInput.value = '';
-          return;
+      try {
+        const file = e.target.files[0];
+        if (file) {
+          if (!file.type.startsWith('image/')) {
+            alert('이미지 파일만 업로드할 수 있습니다.');
+            fileInput.value = '';
+            return;
+          }
+          if (file.size > 1500000) {
+            alert('1.5MB 이하의 이미지만 업로드 가능합니다.');
+            fileInput.value = '';
+            return;
+          }
+          const reader = new FileReader();
+          reader.onerror = () => {
+            alert('이미지 파일을 읽는 동안 에러가 발생했습니다.');
+            fileInput.value = '';
+            loadedImageData = '';
+            previewDiv.innerHTML = '<span style="font-size: 11px; color: var(--color-text-muted);">미리보기</span>';
+          };
+          reader.onload = (event) => {
+            loadedImageData = event.target.result;
+            if (urlInput) urlInput.value = '';
+            previewDiv.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = loadedImageData;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            previewDiv.appendChild(img);
+          };
+          reader.readAsDataURL(file);
         }
-        if (file.size > 1500000) {
-          alert('1.5MB 이하의 이미지만 업로드 가능합니다.');
-          fileInput.value = '';
-          return;
-        }
-        const reader = new FileReader();
-        reader.onerror = () => {
-          alert('이미지 파일을 읽는 동안 에러가 발생했습니다.');
-          fileInput.value = '';
-          loadedImageData = '';
+      } catch (err) {
+        alert('파일을 읽는 동안 오류가 발생했습니다.');
+        fileInput.value = '';
+        loadedImageData = '';
+        if (previewDiv) {
           previewDiv.innerHTML = '<span style="font-size: 11px; color: var(--color-text-muted);">미리보기</span>';
-        };
-        reader.onload = (event) => {
-          loadedImageData = event.target.result;
-          if (urlInput) urlInput.value = '';
-          previewDiv.innerHTML = '';
-          const img = document.createElement('img');
-          img.src = loadedImageData;
-          img.style.width = '100%';
-          img.style.height = '100%';
-          img.style.objectFit = 'contain';
-          previewDiv.appendChild(img);
-        };
-        reader.readAsDataURL(file);
+        }
       }
     });
   }
 
   if (vidFileInput) {
     vidFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        if (!file.type.startsWith('video/')) {
-          alert('비디오 파일만 업로드할 수 있습니다.');
-          vidFileInput.value = '';
-          return;
+      try {
+        const file = e.target.files[0];
+        if (file) {
+          if (!file.type.startsWith('video/')) {
+            alert('비디오 파일만 업로드할 수 있습니다.');
+            vidFileInput.value = '';
+            return;
+          }
+          if (file.size > 1500000) {
+            alert('1.5MB 이하의 비디오만 업로드 가능합니다.');
+            vidFileInput.value = '';
+            return;
+          }
+          const reader = new FileReader();
+          reader.onerror = () => {
+            alert('비디오 파일을 읽는 동안 에러가 발생했습니다.');
+            vidFileInput.value = '';
+            loadedVideoData = '';
+            vidPreviewDiv.innerHTML = '<span style="font-size: 11px; color: var(--color-text-muted);">미리보기</span>';
+          };
+          reader.onload = (event) => {
+            loadedVideoData = event.target.result;
+            if (vidUrlInput) vidUrlInput.value = '';
+            vidPreviewDiv.innerHTML = '';
+            const video = document.createElement('video');
+            video.src = loadedVideoData;
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'contain';
+            video.muted = true;
+            video.autoplay = true;
+            video.loop = true;
+            vidPreviewDiv.appendChild(video);
+          };
+          reader.readAsDataURL(file);
         }
-        if (file.size > 1500000) {
-          alert('1.5MB 이하의 비디오만 업로드 가능합니다.');
-          vidFileInput.value = '';
-          return;
-        }
-        const reader = new FileReader();
-        reader.onerror = () => {
-          alert('비디오 파일을 읽는 동안 에러가 발생했습니다.');
-          vidFileInput.value = '';
-          loadedVideoData = '';
+      } catch (err) {
+        alert('파일을 읽는 동안 오류가 발생했습니다.');
+        vidFileInput.value = '';
+        loadedVideoData = '';
+        if (vidPreviewDiv) {
           vidPreviewDiv.innerHTML = '<span style="font-size: 11px; color: var(--color-text-muted);">미리보기</span>';
-        };
-        reader.onload = (event) => {
-          loadedVideoData = event.target.result;
-          if (vidUrlInput) vidUrlInput.value = '';
-          vidPreviewDiv.innerHTML = '';
-          const video = document.createElement('video');
-          video.src = loadedVideoData;
-          video.style.width = '100%';
-          video.style.height = '100%';
-          video.style.objectFit = 'contain';
-          video.muted = true;
-          video.autoplay = true;
-          video.loop = true;
-          vidPreviewDiv.appendChild(video);
-        };
-        reader.readAsDataURL(file);
+        }
       }
     });
   }
