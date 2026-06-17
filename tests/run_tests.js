@@ -1817,6 +1817,14 @@ function runPWAFilesTests() {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   assert.strictEqual(manifest.short_name, '성만 FC', 'short_name should match SUNGMAN FC');
   assert.strictEqual(manifest.display, 'standalone', 'display mode should be standalone');
+
+  // sw.js 검증
+  const swPath = path.join(__dirname, '../sw.js');
+  assert.ok(fs.existsSync(swPath), 'sw.js file must exist');
+  const swContent = fs.readFileSync(swPath, 'utf8');
+  assert.ok(swContent.includes('sungmanfc-cache'), 'sw.js should declare a cache name');
+  assert.ok(swContent.includes('install'), 'sw.js should listen to install event');
+  assert.ok(swContent.includes('activate'), 'sw.js should listen to activate event');
 }
 
 // Run the test blocks
