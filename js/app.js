@@ -1006,6 +1006,7 @@ function renderAdminSquad() {
       <table class="admin-table">
         <thead>
           <tr>
+            <th style="width: 70px;">사진</th>
             <th style="width: 70px;">등번호</th>
             <th>이름 (영문)</th>
             <th style="width: 80px;">포지션</th>
@@ -1019,14 +1020,20 @@ function renderAdminSquad() {
   if (squadList.length === 0) {
     html += `
           <tr>
-            <td colspan="5" style="text-align: center; color: var(--color-text-muted);">등록된 선수가 없습니다.</td>
+            <td colspan="6" style="text-align: center; color: var(--color-text-muted);">등록된 선수가 없습니다.</td>
           </tr>
     `;
   } else {
     const sortedSquad = [...squadList].sort((a, b) => a.number - b.number);
     sortedSquad.forEach(player => {
+      const hasImage = player.image && player.image.startsWith('data:image/');
+      const thumbnailHtml = hasImage 
+        ? `<img src="${escapeHTML(player.image)}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; display: block; border: 1px solid var(--color-glass-border);">`
+        : `<div style="width: 32px; height: 32px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--color-glass-border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: var(--color-gold-solid);">${escapeHTML(player.position)}</div>`;
+
       html += `
           <tr>
+            <td>${thumbnailHtml}</td>
             <td><strong>${player.number}</strong></td>
             <td style="text-align: left;">
               ${escapeHTML(player.name)}

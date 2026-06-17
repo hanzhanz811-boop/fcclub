@@ -1559,6 +1559,45 @@ function runAdminDashboardLayoutTests() {
   assert.ok(/\.admin-nav-column\s*\{[^}]*display:\s*flex/i.test(cssContent), 'admin-nav-column should be flex');
 }
 
+function runSquadThumbnailTests() {
+  const fs = require('fs');
+  const path = require('path');
+  const originalDocument = global.document;
+  let appendedHTML = '';
+  const mockContainer = {
+    set innerHTML(val) { appendedHTML = val; },
+    get innerHTML() { return appendedHTML; },
+    querySelectorAll: () => []
+  };
+  global.document = {
+    getElementById: (id) => {
+      if (id === 'adminWorkContent') return mockContainer;
+      return { value: '', addEventListener: () => {}, style: {} };
+    },
+    createElement: () => ({ setAttribute: () => {}, style: {} }),
+    querySelectorAll: () => [],
+    addEventListener: () => {}
+  };
+
+  const appJsPath = path.join(__dirname, '../js/app.js');
+  global.squadList = [{ id: 1, name: '이성만', engName: 'LEE Sungman', number: 10, position: 'FW', image: 'data:image/png;base64,...', stats: { matches: 0, goals: 0, assists: 0 }, details: { birth: '1998-05-12' } }];
+  const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+    global.renderAdminSquad = renderAdminSquad;
+    squadList = global.squadList;
+  `;
+  eval(appJsCode);
+
+  try {
+    global.renderAdminSquad();
+    assert.ok(appendedHTML.includes('<th>사진</th>') || appendedHTML.includes('<th style="width: 70px;">사진</th>'), 'Should render photo table header');
+    assert.ok(appendedHTML.includes('<img src="data:image/png;base64,...'), 'Should render image tag with player source');
+  } finally {
+    global.document = originalDocument;
+    delete global.squadList;
+    delete global.renderAdminSquad;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1581,6 +1620,7 @@ runTestBlock('Admin News Quill Tests (runAdminNewsQuillTests)', runAdminNewsQuil
 runTestBlock('Community Quill Tests (runCommunityQuillTests)', runCommunityQuillTests);
 runTestBlock('Hero Text & Layer Tests (runHeroTextLayerTests)', runHeroTextLayerTests);
 runTestBlock('Admin Dashboard Layout Tests (runAdminDashboardLayoutTests)', runAdminDashboardLayoutTests);
+runTestBlock('Squad Admin Thumbnail Tests (runSquadThumbnailTests)', runSquadThumbnailTests);
 
 
 // Print clean test report
