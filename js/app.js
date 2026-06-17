@@ -262,7 +262,10 @@ function renderSquad(positionFilter = 'ALL') {
       ${imgHtml}
       <div class="player-info">
         <div class="player-name">${escapeHTML(player.name)}</div>
-        <div class="player-pos">${escapeHTML(player.position)}</div>
+        <div style="display: flex; justify-content: center; gap: 6px; font-size: 11px; margin-top: 4px;">
+          <span style="background: rgba(212,175,55,0.15); color: var(--color-gold-solid); padding: 1px 6px; border-radius: 4px; font-weight: bold; font-family: var(--font-header);">No. ${escapeHTML(String(player.number))}</span>
+          <span style="color: var(--color-text-muted);">${escapeHTML(player.position)}</span>
+        </div>
       </div>
     `;
     card.addEventListener('click', () => openPlayerModal(player.id));

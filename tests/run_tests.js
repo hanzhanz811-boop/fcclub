@@ -1600,6 +1600,44 @@ function runSquadThumbnailTests() {
   }
 }
 
+function runSquadCardBadgeTests() {
+  const fs = require('fs');
+  const path = require('path');
+  const originalDocument = global.document;
+  let appendedHTML = '';
+  const mockContainer = {
+    innerHTML: '',
+    appendChild: (child) => { appendedHTML += child.innerHTML; }
+  };
+  
+  try {
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'squadGrid') return mockContainer;
+        return { value: '', addEventListener: () => {}, style: {} };
+      },
+      createElement: () => ({ setAttribute: () => {}, style: {}, addEventListener: () => {}, classList: { add: () => {}, remove: () => {} } }),
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    };
+    
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    global.squadList = [{ id: 1, name: '이성만', engName: 'LEE Sungman', number: 10, position: 'FW', image: 'data:image/png;base64,...', stats: { matches: 0, goals: 0, assists: 0 }, details: { birth: '1998-05-12' } }];
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.renderSquad = renderSquad;
+      squadList = global.squadList;
+    `;
+    eval(appJsCode);
+
+    global.renderSquad('ALL');
+    assert.ok(appendedHTML.includes('No. 10'), 'Player card should contain No. 10 badge');
+  } finally {
+    global.document = originalDocument;
+    delete global.squadList;
+    delete global.renderSquad;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1623,6 +1661,7 @@ runTestBlock('Community Quill Tests (runCommunityQuillTests)', runCommunityQuill
 runTestBlock('Hero Text & Layer Tests (runHeroTextLayerTests)', runHeroTextLayerTests);
 runTestBlock('Admin Dashboard Layout Tests (runAdminDashboardLayoutTests)', runAdminDashboardLayoutTests);
 runTestBlock('Squad Admin Thumbnail Tests (runSquadThumbnailTests)', runSquadThumbnailTests);
+runTestBlock('Squad Card Badge Tests (runSquadCardBadgeTests)', runSquadCardBadgeTests);
 
 
 // Print clean test report
