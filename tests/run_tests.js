@@ -1550,6 +1550,15 @@ function runHeroTextLayerTests() {
   assert.ok(cssContent.includes('z-index: 1'), 'hero-overlay should have z-index: 1');
 }
 
+function runAdminDashboardLayoutTests() {
+  const fs = require('fs');
+  const path = require('path');
+  const cssContent = fs.readFileSync(path.join(__dirname, '../css/components.css'), 'utf8');
+  
+  assert.ok(cssContent.includes('flex-direction: column'), 'admin-layout should change to column flex');
+  assert.ok(cssContent.includes('display: flex'), 'admin-nav-column should be flex');
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1571,6 +1580,7 @@ runTestBlock('News Sorting Tests (runNewsSortingTests)', runNewsSortingTests);
 runTestBlock('Admin News Quill Tests (runAdminNewsQuillTests)', runAdminNewsQuillTests);
 runTestBlock('Community Quill Tests (runCommunityQuillTests)', runCommunityQuillTests);
 runTestBlock('Hero Text & Layer Tests (runHeroTextLayerTests)', runHeroTextLayerTests);
+runTestBlock('Admin Dashboard Layout Tests (runAdminDashboardLayoutTests)', runAdminDashboardLayoutTests);
 
 
 // Print clean test report
