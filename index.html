@@ -347,9 +347,16 @@
       <div class="main-popup-header">
         <h3 id="popupTitle">SUNGMAN FC 공지</h3>
       </div>
-      <div class="main-popup-body" id="popupBodyContent">
-        <!-- 동적 미디어 삽입 -->
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%;">
+        <button type="button" id="btnPrevPopup" class="btn-popup-arrow" style="position: absolute; left: 10px; z-index: 10; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;">&lt;</button>
+        
+        <div class="main-popup-body" id="popupBodyContent" style="width: 100%;">
+          <!-- Dynamic content goes here -->
+        </div>
+        
+        <button type="button" id="btnNextPopup" class="btn-popup-arrow" style="position: absolute; right: 10px; z-index: 10; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;">&gt;</button>
       </div>
+      <div id="popupIndicators" style="display: flex; justify-content: center; gap: 6px; padding-bottom: 12px;"></div>
       <div class="main-popup-footer">
         <label class="main-popup-checkbox-label">
           <input type="checkbox" id="chkHidePopup24h">

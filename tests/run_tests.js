@@ -1638,6 +1638,64 @@ function runSquadCardBadgeTests() {
   }
 }
 
+function runMultiPopupCarouselTests() {
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+  const originalLocalStorage = global.localStorage;
+  
+  let appendedHTML = '';
+  const mockContainer = {
+    set innerHTML(val) { appendedHTML = val; },
+    get innerHTML() { return appendedHTML; }
+  };
+  
+  try {
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'popupBodyContent' || id === 'mainNoticePopup') return mockContainer;
+        return { value: '', addEventListener: () => {}, style: {}, textContent: '' };
+      },
+      createElement: (tag) => ({
+        tagName: tag.toUpperCase(),
+        setAttribute: () => {},
+        style: {},
+        className: '',
+        appendChild: () => {}
+      }),
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    };
+    
+    global.window = {
+      location: { hash: '#home' },
+      addEventListener: () => {}
+    };
+
+    const popupList = [
+      { id: 1, active: true, title: '공지 1', type: 'image', mediaUrl: 'img1.png', link: '' },
+      { id: 2, active: true, title: '공지 2', type: 'image', mediaUrl: 'img2.png', link: '' }
+    ];
+    localStorage.setItem('mainPopupData', JSON.stringify(popupList));
+    
+    // Load app.js and expose functions
+    const fs = require('fs');
+    const path = require('path');
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.checkAndShowPopup = checkAndShowPopup;
+    `;
+    eval(appJsCode);
+
+    global.checkAndShowPopup();
+    assert.ok(appendedHTML.includes('img1.png'), 'Should render first popup image');
+  } finally {
+    global.document = originalDocument;
+    global.window = originalWindow;
+    localStorage.removeItem('mainPopupData');
+    delete global.checkAndShowPopup;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1662,6 +1720,7 @@ runTestBlock('Hero Text & Layer Tests (runHeroTextLayerTests)', runHeroTextLayer
 runTestBlock('Admin Dashboard Layout Tests (runAdminDashboardLayoutTests)', runAdminDashboardLayoutTests);
 runTestBlock('Squad Admin Thumbnail Tests (runSquadThumbnailTests)', runSquadThumbnailTests);
 runTestBlock('Squad Card Badge Tests (runSquadCardBadgeTests)', runSquadCardBadgeTests);
+runTestBlock('Multi Popup Carousel Tests (runMultiPopupCarouselTests)', runMultiPopupCarouselTests);
 
 
 // Print clean test report
