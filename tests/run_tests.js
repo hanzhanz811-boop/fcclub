@@ -1811,6 +1811,11 @@ function runPWAFilesTests() {
   const fs = require('fs');
   const path = require('path');
 
+  // index.html 검증
+  const htmlContent = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  assert.ok(htmlContent.includes('manifest.json'), 'index.html should link manifest.json');
+  assert.ok(htmlContent.includes('navigator.serviceWorker'), 'index.html should register Service Worker');
+
   // manifest.json 검증
   const manifestPath = path.join(__dirname, '../manifest.json');
   assert.ok(fs.existsSync(manifestPath), 'manifest.json file must exist');
