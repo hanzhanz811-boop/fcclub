@@ -1556,7 +1556,7 @@ function runAdminDashboardLayoutTests() {
   const cssContent = fs.readFileSync(path.join(__dirname, '../css/components.css'), 'utf8');
   
   assert.ok(cssContent.includes('flex-direction: column'), 'admin-layout should change to column flex');
-  assert.ok(cssContent.includes('display: flex'), 'admin-nav-column should be flex');
+  assert.ok(/\.admin-nav-column\s*\{[^}]*display:\s*flex/i.test(cssContent), 'admin-nav-column should be flex');
 }
 
 // Run the test blocks

@@ -966,6 +966,8 @@
   border: 1px solid var(--color-glass-border);
   border-radius: 12px;
   padding: 15px;
+  display: flex;
+  align-items: center;
 }
 .admin-nav-column ul {
   list-style: none;
@@ -1335,7 +1337,6 @@
 
   /* 관리자(Admin) - 레이아웃 1열 변경 */
   .admin-layout {
-    grid-template-columns: 1fr;
     gap: 20px;
   }
 }
