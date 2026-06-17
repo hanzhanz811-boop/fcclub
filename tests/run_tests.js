@@ -1768,6 +1768,45 @@ function runMatchUrlFieldsTests() {
   }
 }
 
+function runFanApplicationsTests() {
+  const originalDocument = global.document;
+  let appendedHTML = '';
+  const mockContainer = {
+    set innerHTML(val) { appendedHTML = val; },
+    get innerHTML() { return appendedHTML; }
+  };
+  try {
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'adminWorkContent') return mockContainer;
+        return { value: '', addEventListener: () => {}, style: {} };
+      },
+      createElement: () => ({ setAttribute: () => {}, style: {} }),
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    };
+    
+    const fs = require('fs');
+    const path = require('path');
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.renderAdminApplications = renderAdminApplications;
+    `;
+    eval(appJsCode);
+
+    const appList = [{ id: 1, type: 'escort', name: '홍길동', phone: '010-1234-5678', detail: '8세', status: 'pending', createdAt: '2026-06-17' }];
+    global.localStorage.setItem('fanApplicationsData', JSON.stringify(appList));
+
+    global.renderAdminApplications();
+    assert.ok(appendedHTML.includes('홍길동'), 'Should render application name');
+    assert.ok(appendedHTML.includes('에스코트'), 'Should render application type label');
+  } finally {
+    global.document = originalDocument;
+    global.localStorage.removeItem('fanApplicationsData');
+    delete global.renderAdminApplications;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1795,6 +1834,7 @@ runTestBlock('Squad Card Badge Tests (runSquadCardBadgeTests)', runSquadCardBadg
 runTestBlock('Multi Popup Carousel Tests (runMultiPopupCarouselTests)', runMultiPopupCarouselTests);
 runTestBlock('Match Calendar Picker Tests (runMatchCalendarTests)', runMatchCalendarTests);
 runTestBlock('Match URL Fields Tests (runMatchUrlFieldsTests)', runMatchUrlFieldsTests);
+runTestBlock('Fan Applications Integration Tests (runFanApplicationsTests)', runFanApplicationsTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');

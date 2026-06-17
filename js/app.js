@@ -677,6 +677,24 @@ function bindAdminFeatures() {
     tabList.appendChild(li);
   }
 
+  // Add applications tab button dynamically if not exists
+  if (tabList && !document.getElementById('admin-tab-applications')) {
+    const li = document.createElement('li');
+    li.setAttribute('role', 'presentation');
+    
+    const btn = document.createElement('button');
+    btn.className = 'admin-nav-btn';
+    btn.id = 'admin-tab-applications';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', 'false');
+    btn.setAttribute('aria-controls', 'adminWorkContent');
+    btn.setAttribute('data-admin-tab', 'applications');
+    btn.textContent = '신청 현황 관리';
+    
+    li.appendChild(btn);
+    tabList.appendChild(li);
+  }
+
   const adminTabBtns = document.querySelectorAll('.admin-nav-btn[data-admin-tab]');
   adminTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -855,6 +873,8 @@ function renderAdminDashboard() {
     renderAdminSlider();
   } else if (activeAdminTab === 'popup') {
     renderAdminPopup();
+  } else if (activeAdminTab === 'applications') {
+    renderAdminApplications();
   }
 }
 
@@ -2637,10 +2657,148 @@ function renderAdminPopup() {
   });
 }
 
+function renderAdminApplications() {
+  const container = document.getElementById('adminWorkContent');
+  if (!container) return;
+
+  let appList = [];
+  try {
+    appList = JSON.parse(localStorage.getItem('fanApplicationsData')) || [];
+  } catch (err) {
+    appList = [];
+  }
+
+  let html = `
+    <div class="admin-section-header">
+      <h3>팬 예약 신청 현황 관리</h3>
+    </div>
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="width: 100px;">신청일</th>
+            <th style="width: 120px;">신청 구분</th>
+            <th style="width: 100px;">신청인</th>
+            <th style="width: 130px;">연락처</th>
+            <th>상세 내용</th>
+            <th style="width: 100px; text-align: center;">상태</th>
+            <th style="width: 200px; text-align: center;">관리 작업</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (appList.length === 0) {
+    html += `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--color-text-muted); padding: 15px;">등록된 신청 현황이 없습니다.</td>
+          </tr>
+    `;
+  } else {
+    appList.forEach(app => {
+      const typeLabel = app.type === 'escort' ? '에스코트 키즈' : '원정 버스';
+      
+      let statusStyle = '';
+      let statusText = '';
+      if (app.status === 'pending') {
+        statusStyle = 'background: rgba(255, 193, 7, 0.15); color: #ffc107; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;';
+        statusText = '대기중';
+      } else if (app.status === 'approved') {
+        statusStyle = 'background: rgba(40, 167, 69, 0.15); color: #28a745; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;';
+        statusText = '승인됨';
+      } else if (app.status === 'rejected') {
+        statusStyle = 'background: rgba(220, 53, 69, 0.15); color: #dc3545; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;';
+        statusText = '반려됨';
+      }
+
+      html += `
+          <tr>
+            <td>${escapeHTML(app.createdAt || '')}</td>
+            <td><strong>${escapeHTML(typeLabel)}</strong></td>
+            <td>${escapeHTML(app.name)}</td>
+            <td>${escapeHTML(app.phone)}</td>
+            <td>${escapeHTML(app.detail)}</td>
+            <td style="text-align: center;">
+              <span style="${statusStyle}">${statusText}</span>
+            </td>
+            <td style="text-align: center;">
+              <div class="admin-actions" style="justify-content: center; gap: 8px;">
+                <button class="btn btn-outline btn-sm btn-approve-app" data-id="${escapeHTML(String(app.id))}" style="color: #28a745; border-color: rgba(40, 167, 69, 0.3);">승인</button>
+                <button class="btn btn-outline btn-sm btn-reject-app" data-id="${escapeHTML(String(app.id))}" style="color: #ffc107; border-color: rgba(255, 193, 7, 0.3);">반려</button>
+                <button class="btn btn-outline btn-sm btn-delete-app" data-id="${escapeHTML(String(app.id))}" style="color: #ff4a4a; border-color: rgba(255, 74, 74, 0.3);">삭제</button>
+              </div>
+            </td>
+          </tr>
+      `;
+    });
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  if (container.querySelectorAll) {
+    container.querySelectorAll('.btn-approve-app').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        let list = [];
+        try {
+          list = JSON.parse(localStorage.getItem('fanApplicationsData')) || [];
+        } catch (err) {}
+        list = list.map(item => {
+          if (String(item.id) === String(id)) {
+            return { ...item, status: 'approved' };
+          }
+          return item;
+        });
+        localStorage.setItem('fanApplicationsData', JSON.stringify(list));
+        renderAdminApplications();
+      });
+    });
+
+    container.querySelectorAll('.btn-reject-app').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        let list = [];
+        try {
+          list = JSON.parse(localStorage.getItem('fanApplicationsData')) || [];
+        } catch (err) {}
+        list = list.map(item => {
+          if (String(item.id) === String(id)) {
+            return { ...item, status: 'rejected' };
+          }
+          return item;
+        });
+        localStorage.setItem('fanApplicationsData', JSON.stringify(list));
+        renderAdminApplications();
+      });
+    });
+
+    container.querySelectorAll('.btn-delete-app').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('해당 신청 내역을 삭제하시겠습니까?')) return;
+        const id = btn.getAttribute('data-id');
+        let list = [];
+        try {
+          list = JSON.parse(localStorage.getItem('fanApplicationsData')) || [];
+        } catch (err) {}
+        list = list.filter(item => String(item.id) !== String(id));
+        localStorage.setItem('fanApplicationsData', JSON.stringify(list));
+        renderAdminApplications();
+      });
+    });
+  }
+}
+
 appGlobalScope.parseYoutubeEmbedUrl = parseYoutubeEmbedUrl;
 appGlobalScope.checkAndShowPopup = checkAndShowPopup;
 appGlobalScope.initPopupEvents = initPopupEvents;
 appGlobalScope.renderAdminPopup = renderAdminPopup;
+appGlobalScope.renderAdminApplications = renderAdminApplications;
 appGlobalScope.isValidUrl = isValidUrl;
 
 

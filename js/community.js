@@ -258,6 +258,122 @@ function initCommunity() {
       renderWriteForm();
     });
   }
+
+  // 에스코트 키즈 및 원정 버스 예약 신청
+  const btnEscortKidsApply = document.getElementById('btnEscortKidsApply');
+  const btnAwayBusApply = document.getElementById('btnAwayBusApply');
+  const fanApplicationModal = document.getElementById('fanApplicationModal');
+  const btnCloseFanModal = document.getElementById('btnCloseFanModal');
+  const fanApplicationForm = document.getElementById('fanApplicationForm');
+
+  if (btnEscortKidsApply) {
+    btnEscortKidsApply.addEventListener('click', () => {
+      const typeInput = document.getElementById('fanAppType');
+      const modalTitle = document.getElementById('fanModalTitle');
+      const detailLabel = document.getElementById('fanAppDetailLabel');
+      const detailInput = document.getElementById('fanAppDetail');
+      
+      if (typeInput) typeInput.value = 'escort';
+      if (modalTitle) modalTitle.textContent = '에스코트 키즈 신청';
+      if (detailLabel) detailLabel.textContent = '자녀 나이 (세)';
+      if (detailInput) {
+        detailInput.placeholder = '예: 8세';
+        detailInput.value = '';
+      }
+      
+      const nameInput = document.getElementById('fanAppName');
+      const phoneInput = document.getElementById('fanAppPhone');
+      if (nameInput) nameInput.value = '';
+      if (phoneInput) phoneInput.value = '';
+
+      if (fanApplicationModal) {
+        fanApplicationModal.classList.add('is-visible');
+      }
+    });
+  }
+
+  if (btnAwayBusApply) {
+    btnAwayBusApply.addEventListener('click', () => {
+      const typeInput = document.getElementById('fanAppType');
+      const modalTitle = document.getElementById('fanModalTitle');
+      const detailLabel = document.getElementById('fanAppDetailLabel');
+      const detailInput = document.getElementById('fanAppDetail');
+      
+      if (typeInput) typeInput.value = 'bus';
+      if (modalTitle) modalTitle.textContent = '원정 버스 예약 신청';
+      if (detailLabel) detailLabel.textContent = '탑승 희망지';
+      if (detailInput) {
+        detailInput.placeholder = '예: 서울시청 앞';
+        detailInput.value = '';
+      }
+      
+      const nameInput = document.getElementById('fanAppName');
+      const phoneInput = document.getElementById('fanAppPhone');
+      if (nameInput) nameInput.value = '';
+      if (phoneInput) phoneInput.value = '';
+
+      if (fanApplicationModal) {
+        fanApplicationModal.classList.add('is-visible');
+      }
+    });
+  }
+
+  if (btnCloseFanModal) {
+    btnCloseFanModal.addEventListener('click', () => {
+      if (fanApplicationModal) {
+        fanApplicationModal.classList.remove('is-visible');
+      }
+    });
+  }
+
+  if (fanApplicationForm) {
+    fanApplicationForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const type = document.getElementById('fanAppType').value;
+      const name = document.getElementById('fanAppName').value.trim();
+      const phone = document.getElementById('fanAppPhone').value.trim();
+      const detail = document.getElementById('fanAppDetail').value.trim();
+      
+      if (!name || !phone || !detail) {
+        alert('모든 필드를 입력해 주세요.');
+        return;
+      }
+      
+      const phoneRegex = /^\d{2,4}-\d{3,4}-\d{4}$/;
+      if (!phoneRegex.test(phone)) {
+        alert('올바른 연락처 형식을 입력해 주세요. (예: 010-1234-5678)');
+        return;
+      }
+
+      let appList = [];
+      try {
+        appList = JSON.parse(localStorage.getItem('fanApplicationsData')) || [];
+      } catch (err) {
+        appList = [];
+      }
+
+      const record = {
+        id: Date.now(),
+        type,
+        name,
+        phone,
+        detail,
+        status: 'pending',
+        createdAt: new Date().toISOString().substring(0, 10)
+      };
+
+      appList.push(record);
+      localStorage.setItem('fanApplicationsData', JSON.stringify(appList));
+
+      alert('신청이 정상적으로 접수되었습니다.');
+      fanApplicationForm.reset();
+      if (fanApplicationModal) {
+        fanApplicationModal.classList.remove('is-visible');
+      }
+    });
+  }
+
   renderPostList();
 }
 

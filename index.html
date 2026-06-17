@@ -180,6 +180,10 @@
               <span class="board-count">전체 글 <strong id="postCount">0</strong>개</span>
               <button id="btnOpenWrite" class="btn btn-gold">글쓰기</button>
             </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+              <button id="btnEscortKidsApply" class="btn btn-gold" style="flex: 1; font-size: 13px; padding: 8px 0;">에스코트 키즈 신청</button>
+              <button id="btnAwayBusApply" class="btn btn-gold" style="flex: 1; font-size: 13px; padding: 8px 0;">원정 버스 신청</button>
+            </div>
             <div id="boardList" class="board-list-items">
               <!-- JS 동적 렌더링 -->
             </div>
@@ -211,6 +215,7 @@
               <li role="presentation"><button class="admin-nav-btn" id="admin-tab-members" role="tab" aria-selected="false" aria-controls="adminWorkContent" data-admin-tab="members">회원 관리</button></li>
               <li role="presentation"><button class="admin-nav-btn" id="admin-tab-slider" role="tab" aria-selected="false" aria-controls="adminWorkContent" data-admin-tab="slider">메인 이미지 관리</button></li>
               <li role="presentation"><button class="admin-nav-btn" id="admin-tab-popup" role="tab" aria-selected="false" aria-controls="adminWorkContent" data-admin-tab="popup">팝업 관리</button></li>
+              <li role="presentation"><button class="admin-nav-btn" id="admin-tab-applications" role="tab" aria-selected="false" aria-controls="adminWorkContent" data-admin-tab="applications">신청 현황 관리</button></li>
             </ul>
             <div class="admin-nav-logout-wrapper">
               <button class="admin-nav-btn logout-btn" id="btnAdminLogout">로그아웃</button>
@@ -364,6 +369,34 @@
         </label>
         <button type="button" class="btn-popup-close" id="btnCloseNoticePopup">닫기</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 팬 예약 신청 모달 -->
+  <div id="fanApplicationModal" class="main-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="fanModalTitle">
+    <div class="main-popup-container" style="max-width: 450px;">
+      <div class="main-popup-header">
+        <h3 id="fanModalTitle">예약 신청</h3>
+      </div>
+      <form id="fanApplicationForm" style="display: flex; flex-direction: column; gap: 15px; padding: 15px;">
+        <input type="hidden" id="fanAppType" value="">
+        <div class="admin-form-group">
+          <label for="fanAppName">이름</label>
+          <input type="text" id="fanAppName" required placeholder="신청인 이름">
+        </div>
+        <div class="admin-form-group">
+          <label for="fanAppPhone">연락처</label>
+          <input type="text" id="fanAppPhone" required placeholder="예: 010-1234-5678">
+        </div>
+        <div class="admin-form-group">
+          <label id="fanAppDetailLabel" for="fanAppDetail">세부 내용</label>
+          <input type="text" id="fanAppDetail" required placeholder="">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button type="submit" class="btn btn-gold" style="flex: 1;">신청하기</button>
+          <button type="button" class="btn btn-outline" id="btnCloseFanModal" style="flex: 1;">취소</button>
+        </div>
+      </form>
     </div>
   </div>
 
