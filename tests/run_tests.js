@@ -1807,6 +1807,18 @@ function runFanApplicationsTests() {
   }
 }
 
+function runPWAFilesTests() {
+  const fs = require('fs');
+  const path = require('path');
+
+  // manifest.json 검증
+  const manifestPath = path.join(__dirname, '../manifest.json');
+  assert.ok(fs.existsSync(manifestPath), 'manifest.json file must exist');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  assert.strictEqual(manifest.short_name, '성만 FC', 'short_name should match SUNGMAN FC');
+  assert.strictEqual(manifest.display, 'standalone', 'display mode should be standalone');
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1835,6 +1847,7 @@ runTestBlock('Multi Popup Carousel Tests (runMultiPopupCarouselTests)', runMulti
 runTestBlock('Match Calendar Picker Tests (runMatchCalendarTests)', runMatchCalendarTests);
 runTestBlock('Match URL Fields Tests (runMatchUrlFieldsTests)', runMatchUrlFieldsTests);
 runTestBlock('Fan Applications Integration Tests (runFanApplicationsTests)', runFanApplicationsTests);
+runTestBlock('PWA Files Integrity Tests (runPWAFilesTests)', runPWAFilesTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');
