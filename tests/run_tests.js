@@ -1731,6 +1731,43 @@ function runMatchCalendarTests() {
   }
 }
 
+function runMatchUrlFieldsTests() {
+  const originalDocument = global.document;
+  let appendedHTML = '';
+  const mockContainer = {
+    innerHTML: '',
+    appendChild: (child) => { appendedHTML += child.innerHTML; }
+  };
+  try {
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'upcomingMatchesList' || id === 'finishedMatchesList') return mockContainer;
+        return { value: '', addEventListener: () => {}, style: {} };
+      },
+      createElement: () => ({ setAttribute: () => {}, style: {}, addEventListener: () => {}, classList: { add: () => {}, remove: () => {} } }),
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    };
+    
+    const fs = require('fs');
+    const path = require('path');
+    const appJsPath = path.join(__dirname, '../js/app.js');
+    const appJsCode = fs.readFileSync(appJsPath, 'utf8') + `
+      global.renderMatchesPage = renderMatchesPage;
+      global.matchList = matchList;
+    `;
+    eval(appJsCode);
+
+    global.matchList = [{ id: 1, opponent: '수원', venue: '성만', date: '2026.06.25', time: '19:00', type: 'Home', status: 'upcoming', ticketUrl: 'https://ex.com/ticket' }];
+    global.renderMatchesPage();
+    assert.ok(appendedHTML.includes('티켓 예매'), 'Should contain Ticket booking button');
+  } finally {
+    global.document = originalDocument;
+    delete global.matchList;
+    delete global.renderMatchesPage;
+  }
+}
+
 // Run the test blocks
 runTestBlock('Squad Data Schema Tests (runSquadTests)', runSquadTests);
 runTestBlock('Match Data Schema Tests (runMatchTests)', runMatchTests);
@@ -1757,7 +1794,7 @@ runTestBlock('Squad Admin Thumbnail Tests (runSquadThumbnailTests)', runSquadThu
 runTestBlock('Squad Card Badge Tests (runSquadCardBadgeTests)', runSquadCardBadgeTests);
 runTestBlock('Multi Popup Carousel Tests (runMultiPopupCarouselTests)', runMultiPopupCarouselTests);
 runTestBlock('Match Calendar Picker Tests (runMatchCalendarTests)', runMatchCalendarTests);
-
+runTestBlock('Match URL Fields Tests (runMatchUrlFieldsTests)', runMatchUrlFieldsTests);
 
 // Print clean test report
 console.log('=== TEST REPORT SUMMARY ===');

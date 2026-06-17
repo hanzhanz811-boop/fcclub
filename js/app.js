@@ -235,6 +235,28 @@ function bindNextMatchWidget() {
     if (infoEl) infoEl.textContent = '-';
     if (ddayEl) ddayEl.textContent = 'D-00';
   }
+
+  if (document.querySelector) {
+    const existingLinks = document.querySelector('.next-match-widget .match-links');
+    if (existingLinks) {
+      existingLinks.remove();
+    }
+
+    if (upcomingMatch && (upcomingMatch.ticketUrl || upcomingMatch.videoUrl || upcomingMatch.newsUrl)) {
+      const linksDiv = document.createElement('div');
+      linksDiv.className = 'match-links';
+      linksDiv.style = "display: flex; gap: 6px; margin-top: 12px; width: 100%;";
+      linksDiv.innerHTML = `
+        ${upcomingMatch.ticketUrl ? `<a href="${escapeHTML(upcomingMatch.ticketUrl)}" target="_blank" class="btn btn-gold btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0;">티켓 예매</a>` : ''}
+        ${upcomingMatch.videoUrl ? `<a href="${escapeHTML(upcomingMatch.videoUrl)}" target="_blank" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0; border: 1px solid var(--color-glass-border); color: #fff;">영상 보기</a>` : ''}
+        ${upcomingMatch.newsUrl ? `<a href="${escapeHTML(upcomingMatch.newsUrl)}" target="_blank" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0; border: 1px solid var(--color-glass-border); color: #fff;">관련 뉴스</a>` : ''}
+      `;
+      const widgetCard = document.querySelector('.next-match-widget');
+      if (widgetCard) {
+        widgetCard.appendChild(linksDiv);
+      }
+    }
+  }
 }
 
 function renderSquad(positionFilter = 'ALL') {
@@ -367,38 +389,83 @@ function initSquadFeatures() {
   }
 }
 
-function bindMatchCenter() {
-  // 경기 목록 바인딩
+function renderMatchesPage() {
   const container = document.getElementById('matchListContainer');
+  const upcomingContainer = document.getElementById('upcomingMatchesList');
+  const finishedContainer = document.getElementById('finishedMatchesList');
+
   if (container) {
     container.innerHTML = '';
-    matchList.forEach(match => {
+  }
+  if (upcomingContainer) {
+    upcomingContainer.innerHTML = '';
+  }
+  if (finishedContainer) {
+    finishedContainer.innerHTML = '';
+  }
+
+  const currentMatchList = (typeof global !== 'undefined' && global.matchList !== undefined) ? global.matchList : matchList;
+
+  currentMatchList.forEach(match => {
+    let scoreOrTimeHtml = '';
+    if (match.status === 'finished') {
+      scoreOrTimeHtml = `<div class="match-list-score">${match.score.home} - ${match.score.away}</div>`;
+    } else {
+      scoreOrTimeHtml = `<div class="match-list-status">${escapeHTML(match.time)}</div>`;
+    }
+
+    const typeBadge = match.type === 'Home' ? '<span class="match-type-badge home">HOME</span>' : '<span class="match-type-badge">AWAY</span>';
+
+    const linksHtml = `
+      <div style="display: flex; gap: 6px; margin-top: 12px; width: 100%;">
+        ${match.ticketUrl ? `<a href="${escapeHTML(match.ticketUrl)}" target="_blank" class="btn btn-gold btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0;">티켓 예매</a>` : ''}
+        ${match.videoUrl ? `<a href="${escapeHTML(match.videoUrl)}" target="_blank" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0; border: 1px solid var(--color-glass-border); color: #fff;">영상 보기</a>` : ''}
+        ${match.newsUrl ? `<a href="${escapeHTML(match.newsUrl)}" target="_blank" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0; border: 1px solid var(--color-glass-border); color: #fff;">관련 뉴스</a>` : ''}
+      </div>
+    `;
+
+    const hasAnyLink = !!(match.ticketUrl || match.videoUrl || match.newsUrl);
+
+    const innerHtml = `
+      <div style="flex: 1; min-width: 0; margin-right: 15px;">
+        <div class="match-list-meta">
+          ${typeBadge} ${escapeHTML(match.date)} @ ${escapeHTML(match.venue)}
+        </div>
+        <div class="match-list-teams" style="font-weight: bold; margin-top: 5px;">
+          성만 FC vs ${escapeHTML(match.opponent)}
+        </div>
+        ${hasAnyLink ? linksHtml : ''}
+      </div>
+      ${scoreOrTimeHtml}
+    `;
+
+    if (container && typeof container.appendChild === 'function') {
       const item = document.createElement('div');
       item.className = `match-list-item ${match.status}`;
-      
-      let scoreOrTimeHtml = '';
-      if (match.status === 'finished') {
-        scoreOrTimeHtml = `<div class="match-list-score">${match.score.home} - ${match.score.away}</div>`;
-      } else {
-        scoreOrTimeHtml = `<div class="match-list-status">${escapeHTML(match.time)}</div>`;
-      }
-
-      const typeBadge = match.type === 'Home' ? '<span class="match-type-badge home">HOME</span>' : '<span class="match-type-badge">AWAY</span>';
-
-      item.innerHTML = `
-        <div>
-          <div class="match-list-meta">
-            ${typeBadge} ${escapeHTML(match.date)} @ ${escapeHTML(match.venue)}
-          </div>
-          <div class="match-list-teams">
-            성만 FC vs ${escapeHTML(match.opponent)}
-          </div>
-        </div>
-        ${scoreOrTimeHtml}
-      `;
+      item.innerHTML = innerHtml;
       container.appendChild(item);
-    });
-  }
+    }
+    if (match.status === 'finished') {
+      if (finishedContainer && typeof finishedContainer.appendChild === 'function') {
+        const item = document.createElement('div');
+        item.className = `match-list-item ${match.status}`;
+        item.innerHTML = innerHtml;
+        finishedContainer.appendChild(item);
+      }
+    } else {
+      if (upcomingContainer && typeof upcomingContainer.appendChild === 'function') {
+        const item = document.createElement('div');
+        item.className = `match-list-item ${match.status}`;
+        item.innerHTML = innerHtml;
+        upcomingContainer.appendChild(item);
+      }
+    }
+  });
+}
+
+function bindMatchCenter() {
+  // 경기 목록 바인딩
+  renderMatchesPage();
 
   // 순위표 바인딩
   const tbody = document.getElementById('standingTableBody');
@@ -1439,6 +1506,9 @@ function showMatchForm(matchId = null) {
   const statusVal = isEdit ? match.status : 'upcoming';
   const scoreHomeVal = (isEdit && match.score) ? match.score.home : 0;
   const scoreAwayVal = (isEdit && match.score) ? match.score.away : 0;
+  const ticketUrlVal = isEdit && match.ticketUrl ? match.ticketUrl : '';
+  const videoUrlVal = isEdit && match.videoUrl ? match.videoUrl : '';
+  const newsUrlVal = isEdit && match.newsUrl ? match.newsUrl : '';
 
   let html = `
     <div class="admin-section-header">
@@ -1496,6 +1566,22 @@ function showMatchForm(matchId = null) {
         </div>
       </div>
 
+      <!-- 경기 관련 외부 링크 필드 -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <div class="admin-form-group">
+          <label for="matchFormTicketUrl">티켓 구매 URL</label>
+          <input type="text" id="matchFormTicketUrl" value="${escapeHTML(ticketUrlVal)}" placeholder="예: https://example.com/ticket">
+        </div>
+        <div class="admin-form-group">
+          <label for="matchFormVideoUrl">관련 영상 URL</label>
+          <input type="text" id="matchFormVideoUrl" value="${escapeHTML(videoUrlVal)}" placeholder="예: https://example.com/video">
+        </div>
+        <div class="admin-form-group">
+          <label for="matchFormNewsUrl">관련 뉴스 URL</label>
+          <input type="text" id="matchFormNewsUrl" value="${escapeHTML(newsUrlVal)}" placeholder="예: https://example.com/news">
+        </div>
+      </div>
+
       <div style="display: flex; gap: 10px; margin-top: 10px;">
         <button type="submit" class="btn btn-gold" style="flex: 1;">저장</button>
         <button type="button" class="btn btn-outline" id="btnCancelMatchForm" style="flex: 1;">취소</button>
@@ -1530,9 +1616,25 @@ function showMatchForm(matchId = null) {
     const time = document.getElementById('matchFormTime').value.trim();
     const type = document.getElementById('matchFormType').value;
     const status = document.getElementById('matchFormStatus').value;
+    const ticketUrl = document.getElementById('matchFormTicketUrl').value.trim();
+    const videoUrl = document.getElementById('matchFormVideoUrl').value.trim();
+    const newsUrl = document.getElementById('matchFormNewsUrl').value.trim();
 
     if (!opponent || !venue || !date || !time || !type || !status) {
       alert('모든 필수 필드를 입력해 주세요.');
+      return;
+    }
+
+    if (ticketUrl && !isValidUrl(ticketUrl)) {
+      alert('올바른 티켓 구매 URL을 입력해 주세요.');
+      return;
+    }
+    if (videoUrl && !isValidUrl(videoUrl)) {
+      alert('올바른 관련 영상 URL을 입력해 주세요.');
+      return;
+    }
+    if (newsUrl && !isValidUrl(newsUrl)) {
+      alert('올바른 관련 뉴스 URL을 입력해 주세요.');
       return;
     }
 
@@ -1548,10 +1650,10 @@ function showMatchForm(matchId = null) {
     }
 
     if (isEdit) {
-      matchList = matchList.map(m => m.id === matchId ? { ...m, opponent, venue, date, time, type, status, score } : m);
+      matchList = matchList.map(m => m.id === matchId ? { ...m, opponent, venue, date, time, type, status, score, ticketUrl, videoUrl, newsUrl } : m);
     } else {
       const nextId = matchList.length > 0 ? Math.max(...matchList.map(m => m.id)) + 1 : 101;
-      matchList.push({ id: nextId, opponent, venue, date, time, type, status, score });
+      matchList.push({ id: nextId, opponent, venue, date, time, type, status, score, ticketUrl, videoUrl, newsUrl });
     }
 
     localStorage.setItem('matchData', JSON.stringify(matchList));
