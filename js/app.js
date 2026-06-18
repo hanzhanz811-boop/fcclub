@@ -417,7 +417,7 @@ function renderMatchesPage() {
     const typeBadge = match.type === 'Home' ? '<span class="match-type-badge home">HOME</span>' : '<span class="match-type-badge">AWAY</span>';
 
     const linksHtml = `
-      <div style="display: flex; gap: 6px; margin-top: 12px; width: 100%;">
+      <div class="match-links" style="display: flex; gap: 6px; margin-top: 12px; width: 100%;">
         ${match.ticketUrl ? `<a href="${escapeHTML(match.ticketUrl)}" target="_blank" class="btn btn-gold btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0;">티켓 예매</a>` : ''}
         ${match.videoUrl ? `<a href="${escapeHTML(match.videoUrl)}" target="_blank" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0; border: 1px solid var(--color-glass-border); color: #fff;">영상 보기</a>` : ''}
         ${match.newsUrl ? `<a href="${escapeHTML(match.newsUrl)}" target="_blank" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; padding: 6px 0; border: 1px solid var(--color-glass-border); color: #fff;">관련 뉴스</a>` : ''}
